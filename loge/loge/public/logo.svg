@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="brilho" cx="27" cy="30" r="13" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb347" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M10 54V22a12 12 0 0 1 12-12h32v44z" stroke="#d9a441" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M15 44V24a8 8 0 0 1 8-8h26v28" stroke="#d9a441" stroke-width="1" stroke-opacity=".7" stroke-linejoin="round"/>
+  <path d="M10 44h44" stroke="#d9a441" stroke-width="2.2"/>
+  <path d="M10 48.5h44M15 44v10M49 44v10" stroke="#d9a441" stroke-width="1" stroke-opacity=".7"/>
+  <circle cx="27" cy="30" r="13" fill="url(#brilho)"/>
+  <path d="M32 30l17-9v18z" fill="#ffb347" fill-opacity=".3"/>
+  <circle cx="27" cy="30" r="5" stroke="#ffb347" stroke-opacity=".8" stroke-width="1"/>
+  <circle cx="27" cy="30" r="3" fill="#ffb347"/>
+</svg>
