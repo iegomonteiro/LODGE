@@ -344,15 +344,52 @@ function atualizarBotoes() {
 
 /* ---------- vídeos remotos ---------- */
 function mostrarRemoto(peerId, stream) {
-  // Tela ou arquivo: vai para o palco
   let el = document.querySelector(`[data-stream="${stream.id}"]`);
   if (!el) {
     el = document.createElement("video");
-    el.autoplay = true; el.playsInline = true; el.volume = $("rc-vol").value / 100;
+    el.autoplay = true; 
+    el.playsInline = true; 
+    el.setAttribute("playsinline", ""); 
+    el.setAttribute("webkit-playsinline", "");
+    
+    // O SEGREDO PARA O IPHONE: começa mutado para o navegador liberar a imagem
+    el.muted = true; 
+    
     el.dataset.stream = stream.id;
     el.dataset.peer = peerId;
     $("palco").append(el);
-    stream.onremovetrack = () => { if (!stream.getTracks().length) el.remove(); };
+
+    // Força o play no iOS
+    el.play().catch(e => console.log("Aviso do iOS sobre autoplay:", e));
+
+    // Cria o botão amarelo "Toque para ativar o som"
+    const btnSom = document.createElement("button");
+    btnSom.textContent = "🔊 Toque para ativar o som";
+    btnSom.style.cssText = "position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:#ffb347; color:#1a1205; padding:10px 20px; border-radius:25px; font-weight:bold; border:none; cursor:pointer; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.5); font-family:Inter,sans-serif;";
+    
+    btnSom.onclick = () => {
+      el.muted = false;
+      el.volume = $("rc-vol").value / 100;
+      el.play().catch(() => {});
+      btnSom.remove();
+    };
+
+    // Se for um iPhone (ou iPad), mostra o botão. No PC toca direto com som.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      $("quadro").style.position = "relative"; // Garante que o botão fique preso na tela do vídeo
+      $("quadro").append(btnSom);
+    } else {
+      el.muted = false;
+      el.volume = $("rc-vol").value / 100;
+    }
+
+    stream.onremovetrack = () => { 
+      if (!stream.getTracks().length) {
+        el.remove(); 
+        btnSom.remove();
+      }
+    };
   }
   if (el.srcObject !== stream) el.srcObject = stream;
   renderRemoto();
