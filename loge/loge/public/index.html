@@ -24,8 +24,11 @@
     </div>
   </main>
   <script>
+    // getRandomValues funciona também em HTTP puro; randomUUID exige contexto seguro (HTTPS/localhost)
+    const novoId = () =>
+      Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join("");
     document.getElementById("criar").onclick = () => {
-      const id = crypto.randomUUID().slice(0, 8);
+      const id = novoId();
       const senha = document.getElementById("senha-sala").value;
       if (senha) sessionStorage.setItem("senha:" + id, senha);
       location.href = "/sala/" + id;

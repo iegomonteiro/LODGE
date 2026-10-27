@@ -13,7 +13,7 @@ build step, a handful of files.
 - Local video file mode
 - Adjustable resolution, fps, bitrate and codec (H.264, VP9, AV1, VP8)
 - Live stats (resolution, fps, Mbps, encoder)
-- Chat and webcams
+- Chat
 - Cinema mode
 - Optional room password, one broadcaster at a time, host can free the stage
 - Viewers can play/pause/seek a local-file broadcast
@@ -24,8 +24,8 @@ build step, a handful of files.
 Requires Node.js 20+.
 
 ```bash
-git clone https://github.com/YOUR_USER/loge.git
-cd loge
+git clone https://github.com/iegomonteiro/lodge.git
+cd lodge/loge/loge
 npm install
 npm start
 ```
@@ -40,6 +40,12 @@ Open http://localhost:3000, create a room and share the link.
 3. If some friends cannot connect, run a TURN server (coturn) and set
    `TURN_URL` and `TURN_SECRET` (see `.env.example`).
 
+> **HTTPS is required for screen sharing.** Browsers only allow screen capture
+> on secure origins: `https://` or `http://localhost`. Opening the server by
+> its LAN address (e.g. `http://192.168.0.10:3000`) lets people join and chat,
+> but "Compartilhar tela" will not work there. Use a tunnel or a reverse proxy
+> with HTTPS.
+
 Media goes peer to peer; the server only handles signaling and chat.
 Each viewer gets a separate stream, so your upload bandwidth is
 bitrate × number of viewers.
@@ -52,6 +58,18 @@ bitrate × number of viewers.
 | `MAX_PEERS`   | 8       | Maximum people per room       |
 | `TURN_URL`    | --      | Comma-separated TURN URLs     |
 | `TURN_SECRET` | --      | coturn `static-auth-secret`   |
+
+Set them in the shell, or copy `.env.example` to `.env` and run
+`node --env-file=.env server.js` (Node 20.6+).
+
+## Room passwords and limits
+
+- The first person to join a room sets its password (leave it empty for an
+  open room). The password is kept in memory only, salted, and survives for
+  10 minutes after the room empties, so the link is not reopened by someone
+  recreating the room. A server restart clears it.
+- After 10 wrong passwords a room refuses joins for one minute.
+- Each connection is rate limited (messages overall and chat in particular).
 
 ## Notes
 

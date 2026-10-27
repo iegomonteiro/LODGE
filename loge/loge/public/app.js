@@ -1,10 +1,10 @@
-const roomId = location.pathname.split("/").pop();
+const roomId = location.pathname.split("/").filter(Boolean).pop() || ""; // ignora barra no final da URL
 const $ = (id) => document.getElementById(id);
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, senders:{tela:[],cam:[]} }
+const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, senders:{tela:[]} }
 const nomes = new Map(); // id -> nome
-const tipos = new Map(); // streamId remoto -> "tela" | "cam"
-const locais = { tela: null, cam: null };
+const locais = { tela: null }; // stream que estou transmitindo (tela ou arquivo)
 let ws, myId, hostId = null, sharerId = null, senha = "", nomeAtual = "";
 let encerrado = false, tentativas = 0, modoArquivo = false, estadoRemoto = null, arrastando = false, resolverReserva = null;
 let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -57,7 +57,7 @@ function conectar() {
         break;
       case "host": hostId = msg.id; atualizarStatus(); break;
       case "sharer": sharerId = msg.id; if (!msg.id) estadoRemoto = null; atualizarStatus(); break;
-      case "share-ok": resolverReserva?.(msg); break;
+      case "share-ok": sharerId = myId; resolverReserva?.(msg); atualizarStatus(); break;
       case "share-denied":
         if (resolverReserva) resolverReserva(msg);
         else { negarPalco(msg); pararTransmissao(); }
@@ -65,9 +65,11 @@ function conectar() {
       case "stop-share": aviso("O anfitrião liberou o palco."); pararTransmissao(); break;
       case "sync": tratarSync(msg.from, msg.data); break;
       case "need-password": case "wrong-password": pedirSenha(msg.type === "wrong-password"); break;
+      case "locked": pedirSenha(true, "Muitas tentativas. Tente de novo em 1 minuto."); break;
       case "signal": await tratarSinal(msg.from, msg.data); break;
       case "chat": mensagem(msg); break;
       case "full": encerrado = true; alert("Sala cheia."); break;
+      case "invalid-room": encerrado = true; alert("Link de sala inválido."); break;
     }
   };
   ws.onclose = () => {
@@ -84,7 +86,7 @@ function limparPeers() {
   hostId = sharerId = estadoRemoto = null;
 }
 
-function pedirSenha(errada) {
+function pedirSenha(errada, texto) {
   encerrado = true;
   sessionStorage.removeItem("senha:" + roomId);
   $("sala").hidden = true;
@@ -92,7 +94,7 @@ function pedirSenha(errada) {
   $("senha").hidden = false;
   $("senha").value = "";
   $("erro-senha").hidden = false;
-  $("erro-senha").textContent = errada ? "Senha incorreta." : "Esta sala tem senha.";
+  $("erro-senha").textContent = texto || (errada ? "Senha incorreta." : "Esta sala tem senha.");
   $("senha").focus();
 }
 
@@ -169,7 +171,7 @@ function criarPeer(id) {
   if (peers.has(id)) return peers.get(id);
   const pc = new RTCPeerConnection({ iceServers });
   const peer = { id, pc, polite: myId > id, makingOffer: false, ignoreOffer: false,
-    senders: { tela: [], cam: [] } };
+    senders: { tela: [] } };
   peers.set(id, peer);
 
   pc.onicecandidate = ({ candidate }) => candidate && enviarSinal(id, { candidate });
@@ -187,8 +189,7 @@ function criarPeer(id) {
   return peer;
 }
 
-async function tratarSinal(from, { description, candidate, info }) {
-  if (info) { tipos.set(info.streamId, info.tipo); return; }
+async function tratarSinal(from, { description, candidate }) {
   const peer = criarPeer(from);
   const { pc } = peer;
   try {
@@ -216,11 +217,10 @@ function removerPeer(id) {
   document.querySelectorAll(`[data-peer="${id}"]`).forEach((el) => el.remove());
 }
 
-/* ---------- envio de streams (tela/arquivo e câmera) ---------- */
+/* ---------- envio de streams (tela ou arquivo) ---------- */
 function adicionarStream(peer, tipo) {
   const stream = locais[tipo];
   if (!stream) return;
-  enviarSinal(peer.id, { info: { streamId: stream.id, tipo } }); // avisa o que é antes das trilhas
   for (const t of stream.getTracks()) {
     if (tipo === "tela" && t.kind === "video") t.contentHint = $("dica").value;
     const sender = peer.pc.addTrack(t, stream);
@@ -274,6 +274,9 @@ for (const id of ["bitrate", "fps", "dica"]) {
 
 /* ---------- tela ---------- */
 $("tela").onclick = async () => {
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    return aviso("Compartilhar tela exige HTTPS ou localhost (veja o README). Use um túnel HTTPS ou abra por http://localhost.");
+  }
   const [w, h] = $("res").value.split("x").map(Number);
   let stream;
   try {
@@ -312,7 +315,9 @@ function pararTransmissao() {
   const estava = modoArquivo || sharerId === myId || tinhaTela;
   modoArquivo = false;
   if (estava && ws?.readyState === 1) ws.send(JSON.stringify({ type: "share-stop" }));
+  if (sharerId === myId) sharerId = null;
   atualizarBotoes();
+  atualizarStatus();
 }
 $("parar").onclick = pararTransmissao;
 
@@ -320,16 +325,20 @@ $("parar").onclick = pararTransmissao;
 $("arquivo").onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  pararTransmissao(); // antes de reservar, como no fluxo de tela: senão o share-stop desfaria a reserva
   const r = await reservarPalco();
   if (r.type === "share-denied") { e.target.value = ""; return negarPalco(r); }
-  pararTransmissao();
   const v = document.createElement("video");
   v.id = "v-local"; v.controls = true; v.playsInline = true;
   v.src = URL.createObjectURL(file);
   $("palco").prepend(v);
   try { await v.play(); } catch {}
   const capturar = v.captureStream || v.mozCaptureStream;
-  if (!capturar) { alert("Este navegador não consegue capturar vídeo de arquivo."); pararTransmissao(); ws.send(JSON.stringify({ type: "share-stop" })); return; }
+  if (!capturar) {
+    alert("Este navegador não consegue capturar vídeo de arquivo.");
+    pararTransmissao(); // sharerId === myId (share-ok), então isso também libera o palco no servidor
+    return;
+  }
   transmitir(capturar.call(v));
   modoArquivo = true;
   enviarEstado();
@@ -357,6 +366,7 @@ function mostrarRemoto(peerId, stream) {
     
     el.dataset.stream = stream.id;
     el.dataset.peer = peerId;
+    el.srcObject = stream; // antes do play(), para o navegador já ter o que reproduzir
     $("palco").append(el);
 
     // Força o play no iOS
@@ -375,7 +385,6 @@ function mostrarRemoto(peerId, stream) {
     };
 
     // Se for um iPhone (ou iPad), mostra o botão. No PC toca direto com som.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (isIOS) {
       $("quadro").style.position = "relative"; // Garante que o botão fique preso na tela do vídeo
       $("quadro").append(btnSom);
@@ -528,3 +537,5 @@ $("rc-seek").onchange = () => {
 };
 $("rc-vol").oninput = () =>
   document.querySelectorAll("#palco video[data-stream]").forEach((v) => (v.volume = $("rc-vol").value / 100));
+// No iOS o navegador ignora video.volume (o volume é o do aparelho), então o controle seria inútil.
+if (isIOS) $("rc-vol").closest("label").hidden = true;

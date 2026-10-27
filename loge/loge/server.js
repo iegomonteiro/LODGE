@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
-import { randomUUID, createHmac, createHash } from "node:crypto";
+import { randomUUID, randomBytes, createHmac, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const MAX_PEERS = Number(process.env.MAX_PEERS) || 8;
 const ROOM_RE = /^[a-zA-Z0-9_-]{4,64}$/;
+
+// Limites simples contra abuso
+const MSG_LIMIT = 300;            // mensagens por conexão a cada 10 s (cobre rajadas de ICE)
+const CHAT_LIMIT = 10;            // mensagens de chat por conexão a cada 10 s
+const MAX_FAILS = 10;             // senhas erradas por sala antes de bloquear
+const LOCK_MS = 60_000;           // duração do bloqueio da sala
+const EMPTY_ROOM_TTL = 10 * 60_000; // sala com senha vazia guarda a senha por 10 min
 
 const app = express();
 app.disable("x-powered-by");
@@ -34,8 +41,10 @@ app.get("/ice", (_req, res) => {
 const server = createServer(app);
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
-const rooms = new Map(); // Map<sala, Map<peerId, { ws, name }>> + .hash (senha) e .sharer (quem transmite)
-const hash = (t) => createHash("sha256").update(String(t || "")).digest("hex");
+const rooms = new Map(); // Map<sala, Map<peerId, { ws, name }>> + .salt/.hash (senha), .sharer (quem transmite), .fails/.lockedUntil/.expira
+// Senha guardada como HMAC-SHA256 com sal aleatório por sala; comparação em tempo constante.
+const digest = (salt, t) => createHmac("sha256", salt).update(String(t || "")).digest();
+const senhaOk = (room, t) => timingSafeEqual(digest(room.salt, t), room.hash);
 const hostId = (room) => room.keys().next().value; // anfitrião = quem está há mais tempo na sala
 const send = (ws, msg) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(msg));
 const broadcast = (room, msg, exceptId) => {
@@ -47,31 +56,52 @@ wss.on("connection", (ws) => {
   let roomId = null;
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
+  const janela = { t: Date.now(), n: 0, chat: 0 };
 
   ws.on("message", (raw) => {
+    const agora = Date.now();
+    if (agora - janela.t > 10_000) { janela.t = agora; janela.n = 0; janela.chat = 0; }
+    if (++janela.n > MSG_LIMIT) return ws.close(1008, "rate limit");
+
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
     if (msg.type === "join") {
       if (roomId) return;
       const rid = String(msg.room);
-      if (!ROOM_RE.test(rid)) return ws.close();
+      if (!ROOM_RE.test(rid)) {
+        send(ws, { type: "invalid-room" });
+        return ws.close();
+      }
       const pw = String(msg.password || "").slice(0, 64);
       if (!rooms.has(rid)) {
         const nova = new Map();
-        nova.hash = pw ? hash(pw) : null; // quem cria a sala define a senha (opcional)
+        nova.salt = randomBytes(16);
+        nova.hash = pw ? digest(nova.salt, pw) : null; // quem cria a sala define a senha (opcional)
         nova.sharer = null;
+        nova.fails = 0;
+        nova.lockedUntil = 0;
         rooms.set(rid, nova);
       }
       const room = rooms.get(rid);
-      if (room.hash && hash(pw) !== room.hash) {
-        send(ws, { type: pw ? "wrong-password" : "need-password" });
-        return ws.close();
+      if (room.hash) {
+        if (room.lockedUntil > agora) {
+          send(ws, { type: "locked" });
+          return ws.close();
+        }
+        if (!senhaOk(room, pw)) {
+          // pedir a senha pela primeira vez (campo vazio) não conta como tentativa errada
+          if (pw && ++room.fails >= MAX_FAILS) { room.lockedUntil = agora + LOCK_MS; room.fails = 0; }
+          send(ws, { type: pw ? "wrong-password" : "need-password" });
+          return ws.close();
+        }
+        room.fails = 0;
       }
       if (room.size >= MAX_PEERS) {
         send(ws, { type: "full" });
         return ws.close();
       }
+      clearTimeout(room.expira);
       roomId = rid;
       const name = String(msg.name || "anônimo").slice(0, 24);
       const peers = [...room].map(([pid, p]) => ({ id: pid, name: p.name }));
@@ -91,7 +121,7 @@ wss.on("connection", (ws) => {
 
     if (msg.type === "chat") {
       const text = String(msg.text || "").slice(0, 500);
-      if (text) broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text });
+      if (text && ++janela.chat <= CHAT_LIMIT) broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text });
     }
 
     // Só uma pessoa transmite por vez
@@ -122,10 +152,22 @@ wss.on("connection", (ws) => {
     const room = roomId && rooms.get(roomId);
     if (!room) return;
     const eraHost = hostId(room) === id;
+    const eraSharer = room.sharer === id;
     room.delete(id);
-    if (room.size === 0) return rooms.delete(roomId);
+    if (eraSharer) room.sharer = null;
+    if (room.size === 0) {
+      if (!room.hash) return rooms.delete(roomId);
+      // sala com senha: guarda a senha por um tempo, para o link não ficar aberto a quem recriar a sala
+      const rid = roomId;
+      clearTimeout(room.expira);
+      room.expira = setTimeout(() => {
+        if (rooms.get(rid) === room && room.size === 0) rooms.delete(rid);
+      }, EMPTY_ROOM_TTL);
+      room.expira.unref?.();
+      return;
+    }
     broadcast(room, { type: "peer-left", id });
-    if (room.sharer === id) { room.sharer = null; broadcast(room, { type: "sharer", id: null }); }
+    if (eraSharer) broadcast(room, { type: "sharer", id: null });
     if (eraHost) broadcast(room, { type: "host", id: hostId(room) });
   });
 });
