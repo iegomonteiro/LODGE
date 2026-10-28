@@ -332,7 +332,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   /* cabeçalho de 56pt: marca à esquerda; contagem e copiar à direita */
   #barra {
     padding: max(.45rem, env(safe-area-inset-top)) 12px .45rem;
-    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start; /* se vierem mais botões, descem para a 2ª linha em vez de alargar a página */
+    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start;
     min-height: 56px;
   }
   #barra .btn, #barra .presenca { flex: none; }
@@ -342,7 +342,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .marca.mini { font-size: .95rem; letter-spacing: .28em; }
   .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
   #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
+  #copiar-txt, #mic-txt { display: none; }
   .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
   #liberar, #parar { padding: .5rem .7rem; font-size: .85rem; }
   #tela, #arquivo-label { padding: .5rem .7rem; font-size: .85rem; }
@@ -351,11 +351,11 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   #principal { padding: 0 12px 10px; gap: 10px; }
   #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 38vh; max-height: 38dvh; width: 100%; border-radius: 14px; }
 
-  /* controles: uma linha de 44pt (modo cinema ocupa o espaço que sobra, tela cheia à direita) */
+  /* controles */
   #controles { gap: 8px; flex-wrap: wrap; justify-content: stretch; }
   #qualidade { order: 3; }
   #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; } /* o volume do celular é o dos botões do aparelho */
+  #remoto .vol { display: none; }
   #rc-seek { flex: 1; width: auto; min-width: 0; }
   #rc-tempo { white-space: nowrap; font-size: .75rem; }
   #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
@@ -364,7 +364,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .cinema-card strong { font-size: .85rem; }
   details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: calc(100vw - 24px); }
 
-  /* a sala: ocupa o resto da altura, com respiro para a barra de gestos */
+  /* a sala */
   #lateral { margin: 0 12px max(12px, env(safe-area-inset-bottom)); min-height: 0; border-radius: 14px; }
   .lateral-topo { padding: .7rem 1rem .4rem; }
   .marca-titulo { font-size: 1.05rem; }
@@ -378,8 +378,6 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .msg { max-width: 92%; }
   #form { margin: .4rem .6rem .6rem; }
 
-  /* Quando o teclado do iPhone abre, o JS limita a sala à área visual disponível
-     e coloca o chat em foco para manter o campo e os GIFs acessíveis. */
   body.teclado-ios { overflow: hidden; }
   body.teclado-ios #sala {
     position: fixed; inset: 0 auto auto 0;
@@ -397,6 +395,14 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
     border-radius: 12px;
   }
   body.teclado-ios #chat { min-height: 0; overflow: hidden; }
+}
+
+/* GIFs no chat: remove o fundo iluminado do balão, mantendo o GIF limpo */
+.msg:has(.chat-gif) .balao {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0;
 }
 
 /* ---------- seletor de avatares ---------- */
