@@ -327,6 +327,28 @@ body.trava { overflow: hidden; }
   background: rgba(14, 15, 19, .72); backdrop-filter: blur(6px);
 }
 
+/* No celular em tela cheia, os controles de reação aparecem ao tocar no vídeo. */
+body.tela-cheia-mobile #reagir {
+  position:absolute; z-index:102; left:max(.75rem, env(safe-area-inset-left));
+  bottom:max(.75rem, env(safe-area-inset-bottom)); opacity:0; pointer-events:none;
+  transform:translateY(8px); transition:opacity .2s, transform .2s;
+  background:rgba(14,15,19,.78); backdrop-filter:blur(8px);
+}
+body.tela-cheia-mobile #quadro.reacoes-visiveis #reagir {
+  opacity:1; pointer-events:auto; transform:translateY(0);
+}
+body.tela-cheia-mobile #gif-panel:not([hidden]) {
+  position:absolute; z-index:103; left:12px; right:12px; bottom:max(4.25rem, calc(env(safe-area-inset-bottom) + 3.5rem));
+  max-height:min(68%, 420px); overflow:auto; margin:0; background:rgba(18,18,22,.96);
+}
+body.tela-cheia-mobile #gif-results { max-height:min(42dvh, 260px); }
+body.tela-cheia-mobile #quadro:not(.reacoes-visiveis) #gif-panel[hidden] { display:none; }
+@media (max-width: 900px) and (pointer: coarse) {
+  #quadro:fullscreen, #quadro:-webkit-full-screen, #quadro.pseudo-cheia {
+    width:100vw !important; height:100vh !important; height:100dvh !important;
+  }
+}
+
 /* só assiste (celular sem captura de tela): a mensagem do palco vazio não pode mandar compartilhar */
 body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a transmissão."; }
 
