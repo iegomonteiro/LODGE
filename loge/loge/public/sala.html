@@ -21,11 +21,14 @@
       <img src="/logo.svg" alt="" width="96" height="96">
       <h1 class="marca">Loge</h1>
       <span class="filete"></span>
-      <p class="sub">Escolha um nome para entrar na sala.</p>
+      <p id="sala-nome" class="tag" hidden></p>
+      <div id="quem" hidden><span id="quem-foto" class="disco"></span><strong id="quem-nome"></strong></div>
+      <p id="dica-entrada" class="sub">Escolha um nome para entrar na sala.</p>
       <input id="nome" placeholder="Seu nome" maxlength="24" autofocus>
       <input id="senha" type="password" placeholder="Senha da sala" maxlength="64" hidden>
       <p id="erro-senha" class="sub" hidden></p>
       <button id="entrar" class="btn primario grande">Entrar</button>
+      <a id="criar-perfil-link" class="link" href="/" hidden>Criar um perfil com foto</a>
     </div>
   </div>
 
@@ -103,7 +106,6 @@
         </div>
 
         <div id="remoto" class="grupo" hidden>
-          <button id="rc-play" class="btn" hidden>Pausar</button>
           <input id="rc-seek" type="range" min="0" max="1000" value="0" hidden>
           <span id="rc-tempo" hidden></span>
           <label class="vol">Volume <input id="rc-vol" type="range" min="0" max="100" value="100"></label>

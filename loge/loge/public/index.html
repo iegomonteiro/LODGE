@@ -15,27 +15,87 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main id="entrada">
-    <div class="cartao">
-      <img src="/logo.svg" alt="" width="120" height="120">
+  <main id="entrada" class="home">
+    <!-- 1) sem perfil: criar ou recuperar -->
+    <section id="sem-perfil" class="cartao" hidden>
+      <img src="/logo.svg" alt="" width="96" height="96">
       <h1 class="marca">Loge</h1>
       <span class="filete"></span>
       <p class="tag">Seu camarote particular.</p>
-      <input id="senha-sala" type="password" placeholder="Senha da sala (opcional)" maxlength="64">
-      <button id="criar" class="btn primario grande">Criar sala</button>
+      <p class="sub">Crie seu perfil: só nome e foto, sem senha.</p>
+      <label class="foto-botao" title="Escolher foto">
+        <span id="novo-foto" class="disco grande-disco"></span>
+        <small>Escolher foto</small>
+        <input id="novo-arquivo" type="file" accept="image/*" hidden>
+      </label>
+      <input id="novo-nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname">
+      <button id="criar-perfil" class="btn primario grande">Criar perfil</button>
+      <button id="so-rapida" class="link">Só quero uma sala rápida</button>
+      <button id="tenho-codigo" class="link">Já tenho um código de recuperação</button>
+      <div id="recuperar" hidden class="bloco">
+        <input id="codigo-in" placeholder="Cole o código aqui" autocomplete="off" spellcheck="false">
+        <button id="recuperar-ok" class="btn">Recuperar perfil</button>
+      </div>
+      <p id="erro-perfil" class="sub erro" hidden></p>
+    </section>
+
+    <!-- 2) com perfil -->
+    <section id="com-perfil" class="painel-home" hidden>
+      <header class="topo-home">
+        <span id="meu-foto" class="disco"></span>
+        <div class="quem"><small>Perfil</small><strong id="meu-nome"></strong></div>
+        <button id="editar-perfil" class="btn">Editar</button>
+        <button id="ver-codigo" class="btn">Meu código</button>
+        <button id="sair-perfil" class="btn">Sair</button>
+      </header>
+
+      <div id="bloco-editar" class="bloco" hidden>
+        <label class="foto-botao">
+          <span id="ed-foto" class="disco grande-disco"></span>
+          <small>Trocar foto</small>
+          <input id="ed-arquivo" type="file" accept="image/*" hidden>
+        </label>
+        <input id="ed-nome" placeholder="Seu nome" maxlength="24">
+        <button id="ed-salvar" class="btn primario">Salvar</button>
+      </div>
+
+      <div id="bloco-codigo" class="bloco" hidden>
+        <p class="sub">Este código é a chave do seu perfil e das suas salas fixas. Guarde num lugar seguro: com ele você recupera tudo em outro aparelho ou se limpar os dados do navegador. <strong>Quem tiver o código vira você: não mostre a ninguém.</strong></p>
+        <code id="codigo-txt"></code>
+        <button id="copiar-codigo" class="btn">Copiar código</button>
+      </div>
+
+      <h2 class="marca-titulo">Minhas salas fixas</h2>
+      <p class="sub peq">O link nunca muda e a sala não some quando fica vazia. Você é sempre o anfitrião.</p>
+      <div id="minhas" class="lista"></div>
+
+      <form id="nova-fixa" class="bloco linha">
+        <input id="fx-nome" placeholder="Nome da sala (ex.: Cinema de sexta)" maxlength="40" required>
+        <input id="fx-slug" placeholder="endereço (ex.: cinema-sexta)" maxlength="64" autocapitalize="none" autocorrect="off" spellcheck="false">
+        <input id="fx-senha" type="password" placeholder="Senha (opcional)" maxlength="64" autocomplete="new-password">
+        <button class="btn primario">Criar sala fixa</button>
+        <p id="fx-erro" class="sub erro" hidden></p>
+      </form>
+
+      <h2 class="marca-titulo">Sala rápida</h2>
+      <p class="sub peq">Some quando todo mundo sai. Boa para uma noite só.</p>
+      <div class="bloco linha">
+        <input id="senha-sala" type="password" placeholder="Senha (opcional)" maxlength="64" autocomplete="new-password">
+        <button id="criar" class="btn">Criar sala rápida</button>
+      </div>
+    </section>
+
+    <!-- 3) sala rápida sem perfil -->
+    <section id="rapida" class="cartao" hidden>
+      <img src="/logo.svg" alt="" width="96" height="96">
+      <h1 class="marca">Loge</h1>
+      <span class="filete"></span>
+      <input id="senha-sala-g" type="password" placeholder="Senha da sala (opcional)" maxlength="64">
+      <button id="criar-g" class="btn primario grande">Criar sala rápida</button>
       <p class="sub">Depois é só mandar o link para os amigos.</p>
-    </div>
+      <button id="voltar-g" class="link">Voltar</button>
+    </section>
   </main>
-  <script>
-    // getRandomValues funciona também em HTTP puro; randomUUID exige contexto seguro (HTTPS/localhost)
-    const novoId = () =>
-      Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join("");
-    document.getElementById("criar").onclick = () => {
-      const id = novoId();
-      const senha = document.getElementById("senha-sala").value;
-      if (senha) sessionStorage.setItem("senha:" + id, senha);
-      location.href = "/sala/" + id;
-    };
-  </script>
+  <script type="module" src="/home.js"></script>
 </body>
 </html>

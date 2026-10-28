@@ -1,3 +1,5 @@
+import { lerPerfil, credenciais, pintarDisco } from "/perfil.js";
+
 const roomId = location.pathname.split("/").filter(Boolean).pop() || ""; // ignora barra no final da URL
 const $ = (id) => document.getElementById(id);
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -11,12 +13,29 @@ const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmiss
 const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
 let micMudo = false, abrindoMic = false;
 const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
+const perfil = lerPerfil(); // nome + foto + código do dono (só neste navegador); null = visitante sem perfil
+const fotos = new Map();    // id -> foto (data URL) dos outros
 let ws, myId, hostId = null, sharerId = null, senha = "", nomeAtual = "";
 let encerrado = false, tentativas = 0, timerReconexao = null, modoArquivo = false, estadoRemoto = null, arrastando = false, resolverReserva = null;
 let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 /* ---------- entrada e conexão ---------- */
 $("nome").value = localStorage.getItem("nome") || "";
+if (perfil) { // com perfil, o nome e a foto vêm dele
+  $("nome").hidden = true;
+  $("dica-entrada").hidden = true;
+  $("quem").hidden = false;
+  $("quem-nome").textContent = perfil.nome;
+  pintarDisco($("quem-foto"), perfil.nome, perfil.foto);
+} else {
+  $("criar-perfil-link").hidden = false;
+}
+fetch(`/api/sala/${encodeURIComponent(roomId)}`).then((r) => r.json()).then((i) => { // sala fixa: mostra o nome antes de entrar
+  if (!i.fixa) return;
+  $("sala-nome").textContent = i.nome;
+  $("sala-nome").hidden = false;
+  document.title = `${i.nome} · Loge`;
+}).catch(() => {});
 // Atenção: com `onkeydown = (e) => e.key === "Enter" && ...` toda tecla que não é Enter devolvia `false`,
 // e um handler `on...` que devolve false cancela a tecla: o campo ficava vazio e o nome virava "anônimo".
 // Por isso o Enter é tratado com addEventListener e sem retorno.
@@ -25,14 +44,15 @@ $("nome").addEventListener("keydown", enterEntra);
 $("senha").addEventListener("keydown", enterEntra);
 
 $("entrar").onclick = async () => {
-  const nome = $("nome").value.trim() || "anônimo";
-  localStorage.setItem("nome", nome);
+  prepararPlayers(); // precisa rodar já, dentro do toque, antes de qualquer await
+  const nome = perfil ? perfil.nome : $("nome").value.trim() || "anônimo";
+  if (!perfil) localStorage.setItem("nome", nome);
   senha = $("senha").hidden ? sessionStorage.getItem("senha:" + roomId) || "" : $("senha").value;
   if (senha) sessionStorage.setItem("senha:" + roomId, senha);
   nomeAtual = nome;
   $("entrada").hidden = true;
   $("sala").hidden = false;
-  garantirAvatar("eu", nome, true);
+  garantirAvatar("eu", nome, true, perfil?.foto);
   try { iceServers = (await (await fetch("/ice")).json()).iceServers; } catch {}
   encerrado = false;
   conectar();
@@ -42,21 +62,23 @@ function conectar() {
   clearTimeout(timerReconexao); // evita duas conexões se a reconexão foi antecipada
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha }));
+  ws.onopen = () => ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha, foto: perfil?.foto, owner: perfil ? credenciais(perfil) : undefined }));
   ws.onmessage = async ({ data }) => {
     const msg = JSON.parse(data);
     switch (msg.type) {
       case "joined":
         tentativas = 0;
         myId = msg.id; hostId = msg.host; sharerId = msg.sharer;
-        msg.peers.forEach((p) => { nomes.set(p.id, p.name); garantirAvatar(p.id, p.name); criarPeer(p.id); });
+        if (msg.sala) document.title = `${msg.sala.nome} · Loge`;
+        msg.peers.forEach((p) => { nomes.set(p.id, p.name); fotos.set(p.id, p.foto); garantirAvatar(p.id, p.name, false, p.foto); criarPeer(p.id); });
         atualizarStatus();
         if (locais.tela) ws.send(JSON.stringify({ type: "share-start" })); // reconectou transmitindo
         if (locais.voz) enviarMic(); // reconectou na voz
         break;
       case "peer-joined":
         nomes.set(msg.id, msg.name);
-        garantirAvatar(msg.id, msg.name);
+        fotos.set(msg.id, msg.foto);
+        garantirAvatar(msg.id, msg.name, false, msg.foto);
         criarPeer(msg.id);
         aviso(`${msg.name} entrou`);
         atualizarStatus();
@@ -80,6 +102,7 @@ function conectar() {
       case "locked": pedirSenha(true, "Muitas tentativas. Tente de novo em 1 minuto."); break;
       case "signal": await tratarSinal(msg.from, msg.data); break;
       case "chat": mensagem(msg); break;
+      case "closed": encerrado = true; alert("Esta sala foi excluída pelo dono."); location.href = "/"; break;
       case "full": encerrado = true; alert("Sala cheia."); break;
       case "invalid-room": encerrado = true; alert("Link de sala inválido."); break;
     }
@@ -95,6 +118,7 @@ function conectar() {
 function limparPeers() {
   [...peers.keys()].forEach(removerPeer);
   nomes.clear();
+  fotos.clear();
   hostId = sharerId = estadoRemoto = null;
 }
 
@@ -124,21 +148,8 @@ function atualizarStatus() {
 }
 
 /* ---------- avatares (bolinhas da sala) ---------- */
-const PALETAS = [
-  ["#7a4a35", "#3d2418"],
-  ["#2f5560", "#16292f"],
-  ["#5b4678", "#2a2038"],
-  ["#6a5a2e", "#2f2713"],
-  ["#3f6a52", "#1b2f24"],
-];
 
-function corDe(texto) {
-  let h = 0;
-  for (const c of texto) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return PALETAS[h % PALETAS.length];
-}
-
-function garantirAvatar(id, nome, eu = false) {
+function garantirAvatar(id, nome, eu = false, foto = null) {
   let el = document.querySelector(`[data-avatar="${id}"]`);
   const rotulo = eu ? "Você" : nome;
   if (el) { el.querySelector("figcaption").textContent = rotulo; return el; }
@@ -151,11 +162,7 @@ function garantirAvatar(id, nome, eu = false) {
 
   const disco = document.createElement("div");
   disco.className = "disco";
-  const [c1, c2] = corDe(nome);
-  disco.style.background = `radial-gradient(circle at 30% 25%, ${c1}, ${c2})`;
-
-  const inicial = document.createElement("span");
-  inicial.textContent = (nome.trim()[0] || "?").toUpperCase();
+  pintarDisco(disco, nome, foto);
 
   const legenda = document.createElement("figcaption");
   legenda.textContent = rotulo;
@@ -164,7 +171,6 @@ function garantirAvatar(id, nome, eu = false) {
   voz.className = "voz";
   voz.hidden = true;
 
-  disco.append(inicial);
   el.append(disco, legenda, voz);
 
   const lista = $("avatares");
@@ -239,7 +245,9 @@ async function tratarSinal(from, { description, candidate, info }) {
 function removerPeer(id) {
   const peer = peers.get(id);
   if (peer) { peer.pc.close(); peers.delete(id); }
-  document.querySelectorAll(`[data-peer="${id}"]`).forEach((el) => { pendentes.delete(el); el.remove(); });
+  document.querySelectorAll(`[data-peer="${id}"]`).forEach((el) => {
+    if (el.tagName === "VIDEO" || el.tagName === "AUDIO") devolverPlayer(el); else el.remove();
+  });
   medidores.get(id)?.(); medidores.delete(id);
   vozEstado.delete(id);
 }
@@ -338,6 +346,7 @@ function pararTransmissao() {
   if (locais.tela) removerStream("tela");
   const v = $("v-local");
   if (v) {
+    v.onpause = null; // de propósito: ao parar a transmissão a pausa é permitida
     v.pause?.();
     if (v.src?.startsWith("blob:")) URL.revokeObjectURL(v.src);
     v.remove();
@@ -361,7 +370,9 @@ $("arquivo").onchange = async (e) => {
   const r = await reservarPalco();
   if (r.type === "share-denied") { e.target.value = ""; return negarPalco(r); }
   const v = document.createElement("video");
-  v.id = "v-local"; v.controls = true; v.playsInline = true;
+  v.id = "v-local"; v.playsInline = true; // sem controles: ninguém pausa, nem quem transmite
+  v.disablePictureInPicture = true;
+  v.onpause = () => { if (!v.ended) v.play().catch(() => {}); }; // se algo pausar, volta a tocar
   v.src = URL.createObjectURL(file);
   $("palco").prepend(v);
   try { await v.play(); } catch {}
@@ -385,54 +396,78 @@ function atualizarBotoes() {
   document.body.classList.toggle("so-assiste", semCaptura && semArquivo);
 }
 
+/* ---------- áudio sempre ligado e vídeo sem pausa ----------
+   Navegadores (principalmente o Safari do iPhone) só tocam com som elementos que já tocaram dentro de um toque
+   do usuário. Por isso, no toque de "Entrar" preparamos alguns players (tocando um silêncio); depois, cada vídeo
+   ou voz que chega usa um desses players e já sai com som, sem botão de "ativar áudio".
+   Se mesmo assim o navegador recusar, o vídeo toca mudo e o som liga no primeiro toque em qualquer lugar. */
+const SILENCIO = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+const piscina = { video: [], audio: [] };
+const semSom = new Set(); // vídeos que tiveram de começar mudos
+
+function novoPlayer(tag) {
+  const el = document.createElement(tag);
+  el.autoplay = true;
+  el.playsInline = true;
+  el.setAttribute("playsinline", "");
+  return el;
+}
+
+function prepararPlayers() { // chamado dentro do toque em "Entrar"
+  for (const [tag, qtd] of [["video", 2], ["audio", 8]]) {
+    while (piscina[tag].length < qtd) {
+      const el = novoPlayer(tag);
+      el.src = SILENCIO;
+      el.play().catch(() => {});
+      piscina[tag].push(el);
+    }
+  }
+  try { ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume?.(); } catch {}
+}
+
+function pegarPlayer(tag) {
+  const el = piscina[tag].pop() || novoPlayer(tag);
+  el.removeAttribute("src");
+  el.muted = false;
+  return el;
+}
+
+function devolverPlayer(el) {
+  pendentes.delete(el);
+  semSom.delete(el);
+  el.onpause = null;
+  try { el.pause(); } catch {}
+  el.srcObject = null;
+  delete el.dataset.stream;
+  delete el.dataset.peer;
+  el.remove();
+  const tag = el.tagName.toLowerCase();
+  if (piscina[tag] && piscina[tag].length < 8) piscina[tag].push(el);
+}
+
+function tocarComSom(el) {
+  el.play().catch(() => { // o navegador recusou o som: toca mudo e liga o som no próximo toque
+    el.muted = true;
+    el.play().catch(() => {});
+    semSom.add(el);
+  });
+}
+
 /* ---------- vídeos remotos ---------- */
 function mostrarRemoto(peerId, stream) {
-  let el = document.querySelector(`[data-stream="${stream.id}"]`);
+  let el = document.querySelector(`video[data-stream="${stream.id}"]`);
   if (!el) {
-    el = document.createElement("video");
-    el.autoplay = true; 
-    el.playsInline = true; 
-    el.setAttribute("playsinline", ""); 
-    el.setAttribute("webkit-playsinline", "");
-    
-    // O SEGREDO PARA O IPHONE: começa mutado para o navegador liberar a imagem
-    el.muted = true; 
-    
+    el = pegarPlayer("video");
     el.dataset.stream = stream.id;
     el.dataset.peer = peerId;
-    el.srcObject = stream; // antes do play(), para o navegador já ter o que reproduzir
+    el.volume = $("rc-vol").value / 100;
+    el.srcObject = stream;
+    // sem pausa para ninguém: se algo pausar (toque, player nativo do iPhone, trocar de app), volta a tocar
+    el.onpause = () => { if (!el.ended && el.srcObject) el.play().catch(() => {}); };
     $("palco").append(el);
-
-    // Força o play no iOS
-    el.play().catch(e => console.log("Aviso do iOS sobre autoplay:", e));
-
-    // Cria o botão amarelo "Toque para ativar o som"
-    const btnSom = document.createElement("button");
-    btnSom.textContent = "🔊 Toque para ativar o som";
-    btnSom.style.cssText = "position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:#ffb347; color:#1a1205; padding:10px 20px; border-radius:25px; font-weight:bold; border:none; cursor:pointer; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.5); font-family:Inter,sans-serif;";
-    
-    btnSom.onclick = () => {
-      el.muted = false;
-      el.volume = $("rc-vol").value / 100;
-      el.play().catch(() => {});
-      btnSom.remove();
-    };
-
-    // Se for um iPhone (ou iPad), mostra o botão. No PC toca direto com som.
-    if (isIOS) {
-      // (o #quadro já é position: relative no CSS; um style inline aqui vencia a tela cheia falsa e a deslocava)
-      $("quadro").append(btnSom);
-    } else {
-      el.muted = false;
-      el.volume = $("rc-vol").value / 100;
-    }
-
+    tocarComSom(el);
     stream.onremovetrack = () => {
-      if (!stream.getTracks().length) {
-        el.remove();
-        btnSom.remove();
-        atualizarWakeLock();
-      }
+      if (!stream.getTracks().length) { devolverPlayer(el); atualizarWakeLock(); renderRemoto(); }
     };
   }
   if (el.srcObject !== stream) el.srcObject = stream;
@@ -477,19 +512,19 @@ function tocar(el) { el.play().catch(() => pendentes.add(el)); }
 document.addEventListener("pointerdown", () => {
   try { ctxAudio?.resume?.(); } catch {}
   for (const el of [...pendentes]) { pendentes.delete(el); tocar(el); }
+  for (const el of [...semSom]) { semSom.delete(el); el.muted = false; el.play().catch(() => {}); }
 }, true);
 
 function tocarVoz(peerId, stream) {
   if (document.querySelector(`audio[data-stream="${stream.id}"]`)) return;
-  const el = document.createElement("audio");
-  el.autoplay = true;
+  const el = pegarPlayer("audio");
   el.dataset.stream = stream.id;
-  el.dataset.peer = peerId; // removerPeer() apaga junto com o resto da pessoa
+  el.dataset.peer = peerId; // removerPeer() devolve junto com o resto da pessoa
   el.srcObject = stream;
   $("voz").append(el);
   tocar(el);
   ouvirNivel(stream, peerId);
-  stream.onremovetrack = () => { if (!stream.getTracks().length) { pendentes.delete(el); el.remove(); } };
+  stream.onremovetrack = () => { if (!stream.getTracks().length) devolverPlayer(el); };
 }
 
 // Anel dourado no avatar de quem está falando (mede o volume da faixa; não muda o áudio)
@@ -752,7 +787,6 @@ function tratarSync(from, d) {
   if (d.k === "cmd" && modoArquivo) {
     const v = $("v-local");
     if (!v) return;
-    if (d.acao === "toggle") v.paused ? v.play() : v.pause();
     if (d.acao === "seek" && Number.isFinite(d.t)) v.currentTime = d.t;
     setTimeout(enviarEstado, 150);
   }
@@ -767,15 +801,13 @@ const fmt = (s) => {
 function renderRemoto() {
   $("remoto").hidden = !document.querySelector("#palco video[data-stream]");
   const vivo = estadoRemoto && Date.now() - estadoRemoto.t < 3500;
-  for (const id of ["rc-play", "rc-seek", "rc-tempo"]) $(id).hidden = !vivo;
+  for (const id of ["rc-seek", "rc-tempo"]) $(id).hidden = !vivo;
   if (!vivo) return;
-  $("rc-play").textContent = estadoRemoto.pausado ? "Continuar" : "Pausar";
   if (!arrastando) $("rc-seek").value = estadoRemoto.dur ? (estadoRemoto.pos / estadoRemoto.dur) * 1000 : 0;
   $("rc-tempo").textContent = `${fmt(estadoRemoto.pos)} / ${fmt(estadoRemoto.dur)}`;
 }
 setInterval(renderRemoto, 1000);
 
-$("rc-play").onclick = () => enviarCmd({ acao: "toggle" });
 $("rc-seek").oninput = () => (arrastando = true);
 $("rc-seek").onchange = () => {
   arrastando = false;

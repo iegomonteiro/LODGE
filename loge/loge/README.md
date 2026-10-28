@@ -9,6 +9,7 @@ build step, a handful of files.
 ## Features
 
 - Rooms by link, no sign-up
+- Profiles (name + photo, no password) and permanent rooms with their own link
 - Screen/tab sharing with audio (echo cancellation off, so movie sound stays clean)
 - Local video file mode
 - Adjustable resolution, fps, bitrate and codec (H.264, VP9, AV1, VP8)
@@ -16,7 +17,7 @@ build step, a handful of files.
 - Chat and voice chat (mic button, mute/unmute, M key)
 - Cinema mode
 - Optional room password, one broadcaster at a time, host can free the stage
-- Viewers can play/pause/seek a local-file broadcast
+- Nobody can pause the video, and the sound is always on (viewers can still seek a local-file broadcast)
 - Automatic reconnection
 
 ## Quick start
@@ -56,11 +57,38 @@ bitrate × number of viewers.
 |---------------|---------|-------------------------------|
 | `PORT`        | 3000    | HTTP/WebSocket port           |
 | `MAX_PEERS`   | 8       | Maximum people per room       |
+| `DATA_DIR`    | `./data`| Where permanent rooms are saved |
+| `MAX_FIXED_ROOMS` | 200 | Permanent rooms on the whole server |
 | `TURN_URL`    | --      | Comma-separated TURN URLs     |
 | `TURN_SECRET` | --      | coturn `static-auth-secret`   |
 
 Set them in the shell, or copy `.env.example` to `.env` and run
 `node --env-file=.env server.js` (Node 20.6+).
+
+## Profiles and permanent rooms
+
+On the home page, create a profile: just a name and a photo, no password. It lives
+in your browser. Profile holders can create **permanent rooms**: the link never
+changes, the room does not disappear when it empties, anyone with the link can
+join (with an optional password), and the owner is always the host and enters
+without typing the password. Owners can rename a room, change or remove its
+password, or delete it from the home page. Anyone without a profile can still
+join with just a name, or create a quick (temporary) room.
+
+- Permanent rooms are saved to `DATA_DIR/salas.json` (back it up; it is git-ignored).
+- The profile's **recovery code** ("Meu código" on the home page) is the proof that
+  you own your rooms. Save it somewhere safe: it restores your profile on another
+  device or after clearing browser data, and anyone who has it can act as you.
+  The server stores only a hash of it. Use HTTPS so it is not sent in clear text.
+- Limits: 10 permanent rooms per profile, 200 per server, 30 creations per hour per
+  network address.
+
+## No pause, sound always on
+
+There is no pause or "enable audio" button. Viewers hear the sound from the moment
+they enter (the Enter tap unlocks audio, which is what makes this work on iPhone),
+and the video keeps playing; if something pauses it (for example the iPhone native
+player), it resumes by itself. In file mode the broadcaster has no controls either.
 
 ## Voice chat
 
