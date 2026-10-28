@@ -39,15 +39,15 @@
         <span class="marca mini">Loge</span>
       </a>
       <div class="acoes">
-        <span id="status" class="presenca"><i class="ponto"></i><span id="contagem">1 na sala</span></span>
+        <span id="status" class="presenca" data-conexao="conectando" title="Conectando…"><i id="conexao-ponto" class="ponto"></i><span id="contagem">1 na sala</span><span id="conexao-txt" class="conexao-txt">Conectando…</span></span>
         <button id="mic" class="btn" aria-pressed="false" title="Entrar no chat de voz (depois, M muta e desmuta)">
           <svg class="ico-mic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
           <svg class="ico-mudo" viewBox="0 0 24 24" aria-hidden="true" hidden><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/></svg>
           <span id="mic-txt">Entrar na voz</span>
         </button>
-        <button id="copiar" class="btn">
+        <button id="copiar" class="btn" title="Compartilhar convite ou copiar link">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
-          <span id="copiar-txt">Copiar link</span>
+          <span id="copiar-txt">Convidar</span>
         </button>
         <button id="liberar" class="btn" hidden>Liberar palco</button>
         <label id="arquivo-label" class="btn" for="arquivo">Arquivo local</label>
