@@ -412,3 +412,32 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 #rc-seek { width: min(24rem, 38vw); }
 #rc-tempo, .vol { color: var(--muted); font-size: .8rem; }
 .vol { display: inline-flex; align-items: center; gap: .4rem; }
+
+/* ---------- perfil e salas fixas (página inicial) ---------- */
+.link { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; padding: .3rem; }
+.link:hover { color: var(--amber); }
+.erro { color: #ff8f80; }
+.peq { font-size: .85rem; }
+.bloco { display: grid; gap: .7rem; justify-items: center; }
+.bloco.linha { grid-template-columns: 1fr; width: 100%; }
+.foto-botao { display: grid; justify-items: center; gap: .3rem; cursor: pointer; color: var(--muted); }
+.disco.grande-disco { width: 88px; height: 88px; font-size: 2rem; border-style: dashed; }
+#entrada.home { align-items: start; padding: 2rem 1rem; }
+.painel-home { width: min(36rem, 100%); display: grid; gap: .9rem; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+.topo-home { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.topo-home .quem { display: grid; flex: 1; min-width: 6rem; }
+.topo-home .quem small { color: var(--muted); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; }
+.topo-home .disco { flex: none; }
+.painel-home .bloco { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 1rem; justify-items: stretch; }
+.painel-home .bloco input { width: 100%; text-align: left; }
+.painel-home .bloco .foto-botao { justify-self: center; }
+#codigo-txt { display: block; word-break: break-all; user-select: all; padding: .6rem; border-radius: 8px; background: var(--night); border: 1px solid var(--line); font-size: .8rem; }
+.lista { display: grid; gap: .6rem; }
+.sala-fixa { display: grid; gap: .6rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: .8rem 1rem; }
+.sala-fixa .info { display: grid; min-width: 0; }
+.sala-fixa small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acoes-fixa { display: flex; flex-wrap: wrap; gap: .4rem; }
+.acoes-fixa a.btn { text-decoration: none; }
+@media (min-width: 560px) { .bloco.linha { grid-template-columns: 1fr 1fr; } .bloco.linha > button, .bloco.linha > p { grid-column: 1 / -1; } }
+#quem { display: flex; align-items: center; gap: .6rem; }
+#quem .disco { width: 44px; height: 44px; }
