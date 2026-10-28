@@ -94,6 +94,27 @@ const fotoValida = (f) => (typeof f === "string" && f.length <= FOTO_MAX && FOTO
 const limpaTexto = (s, max) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
 const publica = (f) => ({ slug: f.slug, nome: f.nome, comSenha: !!f.hash, criadaEm: f.criadaEm });
 
+/* ---------- avatares prontos (public/avatares/<categoria>/*.jpg) ---------- */
+const CATEGORIAS = [
+  ["historicas", "Figuras históricas"],
+  ["cinema", "Cinema"],
+  ["monstros", "Monstros"],
+];
+const IMG_RE = /\.(jpe?g|png|webp)$/i;
+app.get("/api/avatares", (_req, res) => {
+  const bonito = (f) => f.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+  const categorias = CATEGORIAS.map(([id, nome]) => {
+    let itens = [];
+    try {
+      itens = fs.readdirSync(path.join(__dirname, "public", "avatares", id)).filter((f) => IMG_RE.test(f)).sort()
+        .map((f) => ({ url: `/avatares/${id}/${encodeURIComponent(f)}`, nome: bonito(f) }));
+    } catch {}
+    return { id, nome, itens };
+  });
+  res.setHeader("Cache-Control", "no-cache");
+  responder(res, 200, { categorias });
+});
+
 /* ---------- salas fixas: API ---------- */
 function responder(res, codigo, obj) {
   res.statusCode = codigo;

@@ -23,11 +23,12 @@
       <span class="filete"></span>
       <p class="tag">Seu camarote particular.</p>
       <p class="sub">Crie seu perfil: só nome e foto, sem senha.</p>
-      <label class="foto-botao" title="Escolher foto">
+      <label class="foto-botao" id="novo-label" title="Escolher foto">
         <span id="novo-foto" class="disco grande-disco"></span>
-        <small>Escolher foto</small>
+        <small id="novo-dica">Escolher foto</small>
         <input id="novo-arquivo" type="file" accept="image/*" hidden>
       </label>
+      <div id="novo-seletor" class="seletor" hidden></div>
       <input id="novo-nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname">
       <button id="criar-perfil" class="btn primario grande">Criar perfil</button>
       <button id="so-rapida" class="link">Só quero uma sala rápida</button>
@@ -50,11 +51,12 @@
       </header>
 
       <div id="bloco-editar" class="bloco" hidden>
-        <label class="foto-botao">
+        <label class="foto-botao" id="ed-label">
           <span id="ed-foto" class="disco grande-disco"></span>
           <small>Trocar foto</small>
           <input id="ed-arquivo" type="file" accept="image/*" hidden>
         </label>
+        <div id="ed-seletor" class="seletor" hidden></div>
         <input id="ed-nome" placeholder="Seu nome" maxlength="24">
         <button id="ed-salvar" class="btn primario">Salvar</button>
       </div>

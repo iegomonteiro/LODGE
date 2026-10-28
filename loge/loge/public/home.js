@@ -1,4 +1,4 @@
-import { lerPerfil, salvarPerfil, sairDoPerfil, novoPerfil, credenciais, codigoDe, perfilDoCodigo, reduzirFoto, pintarDisco } from "/perfil.js";
+import { MODO_FOTO, lerPerfil, salvarPerfil, sairDoPerfil, novoPerfil, credenciais, codigoDe, perfilDoCodigo, reduzirFoto, pintarDisco } from "/perfil.js";
 
 const $ = (id) => document.getElementById(id);
 // getRandomValues funciona também em HTTP puro; randomUUID exige contexto seguro (HTTPS/localhost)
@@ -38,7 +38,66 @@ async function escolherFoto(input, alvo, nome) {
   }
 }
 
+/* ---------- seletor de avatares prontos, por categoria ---------- */
+let catalogo = null;
+async function montarSeletor(raiz, aoEscolher, atual) {
+  raiz.hidden = false;
+  raiz.textContent = "Carregando avatares…";
+  try { catalogo ||= (await (await fetch("/api/avatares")).json()).categorias; }
+  catch { raiz.textContent = "Não consegui carregar os avatares."; return; }
+  const cats = catalogo.filter((c) => c.itens.length);
+  raiz.textContent = "";
+  if (!cats.length) { raiz.textContent = "Ainda não há avatares nesta instalação."; return; }
+
+  const abas = document.createElement("div");
+  abas.className = "abas";
+  const grade = document.createElement("div");
+  grade.className = "grade-avatares";
+  raiz.append(abas, grade);
+
+  function abrir(cat) {
+    [...abas.children].forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === cat.id)));
+    grade.textContent = "";
+    for (const it of cat.itens) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "opcao-avatar";
+      b.title = it.nome;
+      b.setAttribute("aria-label", it.nome);
+      b.style.backgroundImage = `url("${it.url}")`;
+      if (atual && atual === it.url) b.classList.add("escolhido");
+      b.onclick = async () => {
+        try {
+          const blob = await (await fetch(it.url)).blob();
+          const foto = await reduzirFoto(blob); // vira a mesma bolinha de 128 px que o resto do app já usa
+          grade.querySelectorAll(".escolhido").forEach((x) => x.classList.remove("escolhido"));
+          b.classList.add("escolhido");
+          aoEscolher(foto, it);
+        } catch { alert("Não consegui usar esse avatar. Tente outro."); }
+      };
+      grade.append(b);
+    }
+  }
+  for (const c of cats) {
+    const a = document.createElement("button");
+    a.type = "button";
+    a.className = "aba";
+    a.role = "tab";
+    a.dataset.id = c.id;
+    a.textContent = c.nome;
+    a.onclick = () => abrir(c);
+    abas.append(a);
+  }
+  abrir(cats[0]);
+}
+
 /* ---------- sem perfil ---------- */
+if (!MODO_FOTO) {
+  $("novo-label").style.pointerEvents = "none"; // só mostra a bolinha escolhida
+  $("novo-dica").textContent = "Escolha seu avatar";
+  $("ed-label").style.pointerEvents = "none";
+  montarSeletor($("novo-seletor"), (foto) => { fotoNova = foto; pintarDisco($("novo-foto"), "?", foto); });
+}
 pintarDisco($("novo-foto"), "+", null);
 $("novo-nome").addEventListener("input", () => { if (!fotoNova) pintarDisco($("novo-foto"), $("novo-nome").value || "+", null); });
 $("novo-arquivo").addEventListener("change", async () => {
@@ -90,7 +149,10 @@ $("editar-perfil").onclick = () => {
   $("bloco-codigo").hidden = true;
   const abrir = $("bloco-editar").hidden;
   $("bloco-editar").hidden = !abrir;
-  if (abrir) { fotoNova = perfil.foto; $("ed-nome").value = perfil.nome; pintarDisco($("ed-foto"), perfil.nome, perfil.foto); }
+  if (abrir) {
+    fotoNova = perfil.foto; $("ed-nome").value = perfil.nome; pintarDisco($("ed-foto"), perfil.nome, perfil.foto);
+    if (!MODO_FOTO) montarSeletor($("ed-seletor"), (foto) => { fotoNova = foto; pintarDisco($("ed-foto"), perfil.nome, foto); });
+  }
 };
 $("ed-arquivo").addEventListener("change", async () => {
   fotoNova = (await escolherFoto($("ed-arquivo"), $("ed-foto"), $("ed-nome").value)) || fotoNova;

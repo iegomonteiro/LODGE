@@ -38,6 +38,9 @@ export function perfilDoCodigo(texto, nome, foto) {
   return { id: h.slice(0, 16), token: h.slice(16), nome: nome.trim().slice(0, 24), foto: foto || null };
 }
 
+// true = o perfil usa foto enviada pela pessoa; false = só avatares prontos (public/avatares/). Para voltar às fotos, troque aqui.
+export const MODO_FOTO = false;
+
 // Reduz a foto escolhida para um quadrado de 128 px (cerca de 8 mil caracteres), cortando o excesso do centro
 export async function reduzirFoto(arquivo) {
   const bmp = await createImageBitmap(arquivo);

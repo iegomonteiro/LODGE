@@ -441,3 +441,13 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 @media (min-width: 560px) { .bloco.linha { grid-template-columns: 1fr 1fr; } .bloco.linha > button, .bloco.linha > p { grid-column: 1 / -1; } }
 #quem { display: flex; align-items: center; gap: .6rem; }
 #quem .disco { width: 44px; height: 44px; }
+
+/* ---------- seletor de avatares ---------- */
+.seletor { width: 100%; display: grid; gap: .6rem; }
+.abas { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; justify-content: center; flex-wrap: wrap; }
+.aba { font: inherit; font-size: .82rem; padding: .4rem .8rem; border-radius: 999px; cursor: pointer; color: var(--muted); background: var(--surface2); border: 1px solid var(--line); }
+.aba[aria-selected="true"] { color: var(--night); background: var(--amber); border-color: var(--amber); }
+.grade-avatares { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: .6rem; max-height: 16rem; overflow-y: auto; padding: .2rem; justify-items: center; -webkit-overflow-scrolling: touch; }
+.opcao-avatar { width: 56px; height: 56px; border-radius: 50%; padding: 0; cursor: pointer; background: var(--surface2) center / cover no-repeat; border: 2px solid rgba(217, 164, 65, .3); }
+.opcao-avatar:hover { border-color: var(--gold); }
+.opcao-avatar.escolhido { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .35), 0 0 14px rgba(255, 179, 71, .35); }
