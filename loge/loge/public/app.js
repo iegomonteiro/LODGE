@@ -5,9 +5,12 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platfor
 const semCaptura = window.isSecureContext && !navigator.mediaDevices?.getDisplayMedia;
 const semArquivo = !(HTMLVideoElement.prototype.captureStream || HTMLVideoElement.prototype.mozCaptureStream);
 
-const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, senders:{tela:[]} }
+const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, senders:{tela:[],voz:[]} }
 const nomes = new Map(); // id -> nome
-const locais = { tela: null }; // stream que estou transmitindo (tela ou arquivo)
+const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmissão de tela/arquivo)
+const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
+let micMudo = false, abrindoMic = false;
+const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
 let ws, myId, hostId = null, sharerId = null, senha = "", nomeAtual = "";
 let encerrado = false, tentativas = 0, timerReconexao = null, modoArquivo = false, estadoRemoto = null, arrastando = false, resolverReserva = null;
 let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -49,6 +52,7 @@ function conectar() {
         msg.peers.forEach((p) => { nomes.set(p.id, p.name); garantirAvatar(p.id, p.name); criarPeer(p.id); });
         atualizarStatus();
         if (locais.tela) ws.send(JSON.stringify({ type: "share-start" })); // reconectou transmitindo
+        if (locais.voz) enviarMic(); // reconectou na voz
         break;
       case "peer-joined":
         nomes.set(msg.id, msg.name);
@@ -56,6 +60,7 @@ function conectar() {
         criarPeer(msg.id);
         aviso(`${msg.name} entrou`);
         atualizarStatus();
+        if (locais.voz) enviarMic(); // quem acabou de chegar precisa saber se estou na voz ou mutado
         break;
       case "peer-left":
         aviso(`${nomes.get(msg.id) || "Alguém"} saiu`);
@@ -155,13 +160,18 @@ function garantirAvatar(id, nome, eu = false) {
   const legenda = document.createElement("figcaption");
   legenda.textContent = rotulo;
 
+  const voz = document.createElement("span"); // marca de microfone: ao vivo ou mutado
+  voz.className = "voz";
+  voz.hidden = true;
+
   disco.append(inicial);
-  el.append(disco, legenda);
+  el.append(disco, legenda, voz);
 
   const lista = $("avatares");
   const meu = lista.querySelector('[data-avatar="eu"]');
   if (meu && !eu) lista.insertBefore(el, meu); // "Você" fica sempre por último
   else lista.append(el);
+  pintarVoz(eu ? "eu" : id);
   return el;
 }
 
@@ -178,7 +188,7 @@ function criarPeer(id) {
   if (peers.has(id)) return peers.get(id);
   const pc = new RTCPeerConnection({ iceServers });
   const peer = { id, pc, polite: myId > id, makingOffer: false, ignoreOffer: false,
-    senders: { tela: [] } };
+    senders: { tela: [], voz: [] } };
   peers.set(id, peer);
 
   pc.onicecandidate = ({ candidate }) => candidate && enviarSinal(id, { candidate });
@@ -190,15 +200,21 @@ function criarPeer(id) {
     } catch (e) { console.error(e); }
     finally { peer.makingOffer = false; }
   };
-  pc.ontrack = ({ streams: [stream] }) => stream && mostrarRemoto(id, stream);
+  pc.ontrack = ({ streams: [stream] }) => {
+    if (!stream) return;
+    if (tipos.get(stream.id) === "voz") tocarVoz(id, stream); // áudio do chat de voz: não vira vídeo no palco
+    else mostrarRemoto(id, stream);
+  };
   // Troca de rede (Wi-Fi para 4G) ou volta do segundo plano no celular: tenta refazer o caminho em vez de ficar mudo
   pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") pc.restartIce?.(); };
 
   if (locais.tela) adicionarStream(peer, "tela");
+  if (locais.voz) adicionarStream(peer, "voz");
   return peer;
 }
 
-async function tratarSinal(from, { description, candidate }) {
+async function tratarSinal(from, { description, candidate, info }) {
+  if (info) { tipos.set(info.streamId, info.tipo); return; } // avisa o que é a próxima stream (chega antes das trilhas)
   const peer = criarPeer(from);
   const { pc } = peer;
   try {
@@ -223,13 +239,16 @@ async function tratarSinal(from, { description, candidate }) {
 function removerPeer(id) {
   const peer = peers.get(id);
   if (peer) { peer.pc.close(); peers.delete(id); }
-  document.querySelectorAll(`[data-peer="${id}"]`).forEach((el) => el.remove());
+  document.querySelectorAll(`[data-peer="${id}"]`).forEach((el) => { pendentes.delete(el); el.remove(); });
+  medidores.get(id)?.(); medidores.delete(id);
+  vozEstado.delete(id);
 }
 
-/* ---------- envio de streams (tela ou arquivo) ---------- */
+/* ---------- envio de streams (tela, arquivo ou microfone) ---------- */
 function adicionarStream(peer, tipo) {
   const stream = locais[tipo];
   if (!stream) return;
+  if (tipo === "voz") enviarSinal(peer.id, { info: { streamId: stream.id, tipo } }); // antes das trilhas, para o outro lado tocar como áudio
   for (const t of stream.getTracks()) {
     if (tipo === "tela" && t.kind === "video") t.contentHint = $("dica").value;
     const sender = peer.pc.addTrack(t, stream);
@@ -446,6 +465,142 @@ document.addEventListener("visibilitychange", () => {
   if (ws && !encerrado && ws.readyState === WebSocket.CLOSED) { tentativas = 0; conectar(); }
 });
 
+/* ---------- chat de voz ----------
+   O microfone é mais uma faixa nas mesmas conexões WebRTC da transmissão (peer a peer, sem passar pelo servidor).
+   Mutar só desliga a faixa (`enabled = false`): o navegador continua com o microfone aberto, como no Discord,
+   e desmutar é instantâneo. Fone de ouvido é o ideal: com o som do filme no alto-falante, o microfone o capta. */
+let ctxAudio = null;
+const pendentes = new Set();   // áudios que o navegador não deixou tocar sem um toque do usuário (iPhone)
+const medidores = new Map();   // chave -> função que para o medidor de volume
+
+function tocar(el) { el.play().catch(() => pendentes.add(el)); }
+document.addEventListener("pointerdown", () => {
+  try { ctxAudio?.resume?.(); } catch {}
+  for (const el of [...pendentes]) { pendentes.delete(el); tocar(el); }
+}, true);
+
+function tocarVoz(peerId, stream) {
+  if (document.querySelector(`audio[data-stream="${stream.id}"]`)) return;
+  const el = document.createElement("audio");
+  el.autoplay = true;
+  el.dataset.stream = stream.id;
+  el.dataset.peer = peerId; // removerPeer() apaga junto com o resto da pessoa
+  el.srcObject = stream;
+  $("voz").append(el);
+  tocar(el);
+  ouvirNivel(stream, peerId);
+  stream.onremovetrack = () => { if (!stream.getTracks().length) { pendentes.delete(el); el.remove(); } };
+}
+
+// Anel dourado no avatar de quem está falando (mede o volume da faixa; não muda o áudio)
+function ouvirNivel(stream, chave) {
+  try {
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    const fonte = ctxAudio.createMediaStreamSource(stream);
+    const an = ctxAudio.createAnalyser();
+    an.fftSize = 512;
+    fonte.connect(an);
+    const buf = new Uint8Array(an.fftSize);
+    let ate = 0;
+    const timer = setInterval(() => {
+      an.getByteTimeDomainData(buf);
+      let soma = 0;
+      for (const v of buf) { const x = (v - 128) / 128; soma += x * x; }
+      if (Math.sqrt(soma / buf.length) > 0.03) ate = Date.now() + 350;
+      document.querySelector(`[data-avatar="${chave}"]`)?.classList.toggle("falando", Date.now() < ate);
+    }, 120);
+    medidores.get(chave)?.();
+    medidores.set(chave, () => { clearInterval(timer); try { fonte.disconnect(); } catch {} });
+  } catch { /* sem WebAudio: só não aparece o anel */ }
+}
+
+const estadoMic = () => (!locais.voz ? "off" : micMudo ? "mudo" : "on");
+const enviarMic = () => ws?.readyState === 1 && ws.send(JSON.stringify({ type: "sync", data: { k: "mic", e: estadoMic() } }));
+
+function definirVoz(id, e) { vozEstado.set(id, e); pintarVoz(id); }
+
+function pintarVoz(id) {
+  const el = document.querySelector(`[data-avatar="${id}"]`);
+  if (!el) return;
+  const e = id === "eu" ? estadoMic() : vozEstado.get(id) || "off";
+  const marca = el.querySelector(".voz");
+  if (e === "off") { delete el.dataset.voz; marca.hidden = true; el.classList.remove("falando"); return; }
+  el.dataset.voz = e;
+  marca.hidden = false;
+  marca.textContent = e === "mudo" ? "🔇" : "🎙️";
+  marca.title = e === "mudo" ? "Mutado" : "Na voz";
+  if (e === "mudo") el.classList.remove("falando");
+}
+
+function atualizarMic() {
+  const dentro = !!locais.voz;
+  const b = $("mic");
+  b.classList.toggle("ao-vivo", dentro && !micMudo);
+  b.classList.toggle("mudo", dentro && micMudo);
+  b.setAttribute("aria-pressed", String(dentro && !micMudo));
+  $("mic-txt").textContent = !dentro ? "Entrar na voz" : micMudo ? "Desmutar" : "Mutar";
+  b.title = !dentro ? "Entrar no chat de voz (depois, M muta e desmuta)" : micMudo ? "Desmutar o microfone (M)" : "Mutar o microfone (M)";
+  b.setAttribute("aria-label", b.title);
+  document.querySelector(".ico-mic").hidden = dentro && micMudo;
+  document.querySelector(".ico-mudo").hidden = !(dentro && micMudo);
+  pintarVoz("eu");
+}
+
+async function entrarNaVoz() {
+  if (abrindoMic) return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return aviso(window.isSecureContext
+      ? "Este navegador não permite usar o microfone."
+      : "O microfone exige HTTPS ou localhost (veja o README). Use um túnel HTTPS ou abra por http://localhost.");
+  }
+  abrindoMic = true;
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: false,
+    });
+  } catch (e) {
+    abrindoMic = false;
+    return aviso(e.name === "NotAllowedError" ? "Permissão do microfone negada. Libere nas configurações do navegador."
+      : e.name === "NotFoundError" ? "Nenhum microfone encontrado."
+      : "Não consegui abrir o microfone.");
+  }
+  abrindoMic = false;
+  micMudo = false;
+  locais.voz = stream;
+  stream.getAudioTracks()[0]?.addEventListener("ended", () => { // desconectou o fone ou revogou a permissão
+    if (locais.voz !== stream) return;
+    removerStream("voz");
+    medidores.get("eu")?.(); medidores.delete("eu");
+    aviso("O microfone foi desconectado.");
+    enviarMic(); atualizarMic();
+  });
+  peers.forEach((p) => adicionarStream(p, "voz"));
+  try { ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume?.(); } catch {}
+  ouvirNivel(stream, "eu");
+  enviarMic();
+  atualizarMic();
+}
+
+function alternarMudo() {
+  const faixa = locais.voz?.getAudioTracks()[0];
+  if (!faixa) return;
+  micMudo = !micMudo;
+  faixa.enabled = !micMudo;
+  enviarMic();
+  atualizarMic();
+}
+
+$("mic").onclick = () => { if (locais.voz) alternarMudo(); else entrarNaVoz(); };
+// Atalho M (no computador) para mutar e desmutar sem tirar o olho do filme; ignora quando está digitando
+document.addEventListener("keydown", (e) => {
+  if (e.key?.toLowerCase() !== "m" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || $("sala").hidden) return;
+  if (locais.voz) alternarMudo();
+});
+atualizarMic();
+
 /* ---------- chat ---------- */
 $("form").onsubmit = (e) => {
   e.preventDefault();
@@ -592,6 +747,7 @@ setInterval(enviarEstado, 1000);
 
 function tratarSync(from, d) {
   if (!d) return;
+  if (d.k === "mic" && ["on", "mudo", "off"].includes(d.e)) definirVoz(from, d.e);
   if (d.k === "estado" && from === sharerId) { estadoRemoto = { ...d, t: Date.now() }; renderRemoto(); }
   if (d.k === "cmd" && modoArquivo) {
     const v = $("v-local");

@@ -204,6 +204,20 @@ details .painel {
 }
 .avatar.ativo .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
 
+/* ---------- chat de voz ---------- */
+#mic.ao-vivo { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 0 1px rgba(255, 179, 71, .35), 0 0 16px rgba(255, 179, 71, .18); }
+#mic.mudo { border-color: #c8584a; color: #ff8f80; background: #2a1b1d; }
+.avatar { position: relative; }
+.avatar .voz {
+  position: absolute; top: 0; left: calc(50% + 12px);
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .72rem; line-height: 1;
+  background: var(--surface2); border: 1px solid var(--gold-dim);
+}
+.avatar[data-voz="mudo"] .voz { background: #3a1f22; border-color: #c8584a; }
+.avatar.falando .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
+
 /* ---------- chat ---------- */
 #chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 #msgs { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: 1rem 1.25rem; }
@@ -292,8 +306,9 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .logo-link img { width: 26px; height: 26px; }
   .marca.mini { font-size: .95rem; letter-spacing: .28em; }
   .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
-  #copiar { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
+  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
+  #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
+  .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
   #liberar, #parar { padding: .5rem .7rem; font-size: .85rem; }
   #tela, #arquivo-label { padding: .5rem .7rem; font-size: .85rem; }
 
@@ -347,8 +362,9 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .acoes { display: contents; }
   .logo-link { margin-right: auto; }
   .logo-link img { width: 24px; height: 24px; }
-  #copiar { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt { display: none; }
+  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
+  #copiar-txt, #mic-txt { display: none; }
+  .avatar .voz { left: calc(50% + 5px); top: -2px; width: 18px; height: 18px; font-size: .6rem; }
 
   #principal { display: contents; } /* quadro, controles e sala viram itens da grade da sala */
   #quadro { grid-column: 1; grid-row: 2 / 4; margin: 0 8px 8px 12px; aspect-ratio: auto; max-height: none; min-height: 0; width: auto; }

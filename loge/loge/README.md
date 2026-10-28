@@ -13,7 +13,7 @@ build step, a handful of files.
 - Local video file mode
 - Adjustable resolution, fps, bitrate and codec (H.264, VP9, AV1, VP8)
 - Live stats (resolution, fps, Mbps, encoder)
-- Chat
+- Chat and voice chat (mic button, mute/unmute, M key)
 - Cinema mode
 - Optional room password, one broadcaster at a time, host can free the stage
 - Viewers can play/pause/seek a local-file broadcast
@@ -61,6 +61,20 @@ bitrate × number of viewers.
 
 Set them in the shell, or copy `.env.example` to `.env` and run
 `node --env-file=.env server.js` (Node 20.6+).
+
+## Voice chat
+
+Press the microphone button in the top bar to join the voice chat; press it again
+to mute or unmute (on a computer you can also press `M`). Everyone sees who is in
+the voice chat, who is muted and who is speaking. Voice goes peer to peer like the
+broadcast, using the same connections, and needs HTTPS (or `localhost`) just like
+screen sharing.
+
+- Use headphones. With the movie on speakers, microphones pick it up and friends
+  hear it twice.
+- Muting turns the microphone track off but the browser keeps the microphone open
+  (like Discord), so unmuting is instant. Close the tab to release it.
+- Each voice stream is about 30 kbps per person, so rooms of up to 8 are fine.
 
 ## On iPhone
 
