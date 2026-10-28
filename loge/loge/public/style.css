@@ -506,20 +506,6 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 .acoes-fixa { display: flex; flex-wrap: wrap; gap: .4rem; }
 .acoes-fixa a.btn { text-decoration: none; }
 
-/* Busca pública de salas por nome */
-.busca-salas { width: 100%; }
-.cartao .busca-salas { width: min(36rem, 90vw); }
-.form-busca-salas { display: flex; gap: .5rem; width: 100%; }
-.form-busca-salas input { flex: 1; min-width: 0; width: auto; text-align: left; }
-.resultados-salas { width: 100%; text-align: left; }
-.resultados-salas .sala-fixa { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
-.resultados-salas .sala-fixa .info { overflow-wrap: anywhere; }
-.resultados-salas .sala-fixa small { white-space: normal; }
-@media (max-width: 420px) {
-  .resultados-salas .sala-fixa { grid-template-columns: 1fr; }
-  .resultados-salas .sala-fixa .btn { justify-content: center; }
-}
-
 @media (min-width: 560px) { .bloco.linha { grid-template-columns: 1fr 1fr; } .bloco.linha > button, .bloco.linha > p { grid-column: 1 / -1; } }
 #quem { display: flex; align-items: center; gap: .6rem; }
 #quem .disco { width: 44px; height: 44px; }
