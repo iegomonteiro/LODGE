@@ -669,3 +669,11 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   }
 }
 
+/* GIFs no chat: remove o fundo iluminado do balão, mantendo o GIF limpo */
+.msg:has(.chat-gif) .balao {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0;
+}
+
