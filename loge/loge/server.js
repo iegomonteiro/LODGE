@@ -389,8 +389,8 @@ wss.on("connection", (ws) => {
       if (msg.gif && typeof msg.gif === "object" && typeof msg.gif.url === "string") {
         try {
           const u = new URL(msg.gif.url);
-          if (u.protocol === "https:" && /^media\\d*\\.giphy\\.com$/.test(u.hostname) &&
-              /^\\/media\\/[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+)*\\.gif$/i.test(u.pathname)) {
+          if (u.protocol === "https:" && /^media\d*\.giphy\.com$/.test(u.hostname) &&
+              u.pathname.startsWith("/media/") && /\.gif$/i.test(u.pathname)) {
             gif = { url: u.href, title: limpaTexto(msg.gif.title, 120) || "Reação", alt: limpaTexto(msg.gif.alt, 160) || "Reação GIF" };
           }
         } catch {}
