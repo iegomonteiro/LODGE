@@ -117,61 +117,6 @@ $("copiar-codigo").onclick = async () => {
 
 $("criar").onclick = () => criarSalaRapida($("senha-sala"));
 
-/* ---------- busca pública de salas pelo nome ---------- */
-document.querySelectorAll(".form-busca-salas").forEach((form) => {
-  const campo = form.querySelector(".busca-nome");
-  const resultados = form.parentElement.querySelector(".resultados-salas");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const q = campo.value.trim();
-    if (!q) return;
-    resultados.textContent = "";
-    const status = document.createElement("p");
-    status.className = "sub peq";
-    status.textContent = "Procurando salas…";
-    resultados.append(status);
-    try {
-      const r = await fetch("/api/buscar-salas?q=" + encodeURIComponent(q), { cache: "no-store" });
-      const dados = await r.json();
-      if (!r.ok) throw new Error(dados.erro || "Não foi possível procurar salas.");
-      resultados.textContent = "";
-      if (!dados.salas?.length) {
-        const vazio = document.createElement("p");
-        vazio.className = "sub peq";
-        vazio.textContent = "Nenhuma sala encontrada com esse nome.";
-        resultados.append(vazio);
-        return;
-      }
-      for (const sala of dados.salas) {
-        const item = document.createElement("div");
-        item.className = "sala-fixa";
-        const info = document.createElement("div");
-        info.className = "info";
-        const nome = document.createElement("strong");
-        nome.textContent = sala.nome;
-        const detalhe = document.createElement("small");
-        detalhe.textContent = sala.comSenha ? "🔒 Protegida por senha — entrada bloqueada pela busca." : "Sala sem senha";
-        info.append(nome, detalhe);
-        item.append(info);
-        if (!sala.comSenha) {
-          const entrar = document.createElement("a");
-          entrar.className = "btn primario";
-          entrar.href = "/sala/" + encodeURIComponent(sala.slug);
-          entrar.textContent = "Entrar na sala";
-          item.append(entrar);
-        }
-        resultados.append(item);
-      }
-    } catch (err) {
-      resultados.textContent = "";
-      const aviso = document.createElement("p");
-      aviso.className = "sub erro";
-      aviso.textContent = err.message || "Erro ao procurar salas.";
-      resultados.append(aviso);
-    }
-  });
-});
-
 /* ---------- salas fixas ---------- */
 const slugDe = (t) =>
   t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
