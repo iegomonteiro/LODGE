@@ -200,7 +200,6 @@ details .painel {
 }
 .avatar { margin: 0; display: grid; justify-items: center; gap: .35rem; }
 .avatar figcaption { font-size: .75rem; color: var(--muted); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.avatar .selo-criador { display: inline-block; font-size: 1.12em; line-height: 1; vertical-align: -0.06em; }
 .disco {
   position: relative; overflow: hidden;
   width: 58px; height: 58px; border-radius: 50%;
