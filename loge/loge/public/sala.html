@@ -133,7 +133,16 @@
       <div id="avatares"></div>
       <div id="chat">
         <div id="msgs"></div>
+        <section id="gif-panel" class="gif-painel" hidden aria-label="Buscar GIFs">
+          <div class="gif-painel-topo">
+            <input id="gif-search" type="search" placeholder="Buscar GIFs..." autocomplete="off" aria-label="Buscar GIFs">
+            <button id="gif-close" class="gif-fechar" type="button" aria-label="Fechar seletor de GIFs">×</button>
+          </div>
+          <div id="gif-results" class="gif-resultados" aria-live="polite"></div>
+          <small class="gif-credito">GIFs fornecidos pelo GIPHY</small>
+        </section>
         <form id="form">
+          <button id="gif-btn" class="gif-botao" type="button" aria-label="Escolher GIF" aria-expanded="false" title="Enviar GIF">GIF</button>
           <input id="texto" placeholder="Diga alguma coisa..." maxlength="500" autocomplete="off" enterkeyhint="send">
           <button class="enviar" aria-label="Enviar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-6-6m6 6-6 6"/></svg>
