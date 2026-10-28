@@ -1,9 +1,10 @@
-// Perfil do Loge: nome + foto, guardado só neste navegador. Sem senha.
+// Perfil do Loge: nome + foto/avatar, guardado só neste navegador. Sem senha.
 // O "código secreto" (token) prova ao servidor que você é o dono das suas salas fixas.
 // Quem tiver o código vira você: trate como uma senha.
 
 const CHAVE = "loge:perfil";
 const FOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+const AVATAR_RE = /^\/avatars\/(historicas|cinema|monstros)\/foto_\d{2}\.png$/;
 
 const hex = (n) =>
   Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -12,7 +13,8 @@ export function lerPerfil() {
   try {
     const p = JSON.parse(localStorage.getItem(CHAVE));
     if (p && /^[a-f0-9]{16}$/.test(p.id) && /^[a-f0-9]{32}$/.test(p.token) && typeof p.nome === "string") {
-      return { id: p.id, token: p.token, nome: p.nome.slice(0, 24), foto: FOTO_RE.test(p.foto || "") ? p.foto : null };
+      const foto = p.foto && (FOTO_RE.test(p.foto) || AVATAR_RE.test(p.foto)) ? p.foto : null;
+      return { id: p.id, token: p.token, nome: p.nome.slice(0, 24), foto };
     }
   } catch {}
   return null;
@@ -70,7 +72,7 @@ export function corDe(texto) {
 
 export function pintarDisco(disco, nome, foto) {
   disco.textContent = "";
-  if (foto && FOTO_RE.test(foto)) {
+  if (foto && (FOTO_RE.test(foto) || AVATAR_RE.test(foto))) {
     disco.style.background = `center / cover no-repeat url("${foto}")`;
     return;
   }
@@ -80,3 +82,16 @@ export function pintarDisco(disco, nome, foto) {
   inicial.textContent = (nome.trim()[0] || "?").toUpperCase();
   disco.append(inicial);
 }
+
+// Lista de avatares disponíveis por categoria
+export const AVATARES = {
+  historicas: Array.from({ length: 12 }, (_, i) => `/avatars/historicas/foto_${String(i + 1).padStart(2, "0")}.png`),
+  cinema: Array.from({ length: 12 }, (_, i) => `/avatars/cinema/foto_${String(i + 1).padStart(2, "0")}.png`),
+  monstros: Array.from({ length: 16 }, (_, i) => `/avatars/monstros/foto_${String(i + 1).padStart(2, "0")}.png`),
+};
+
+export const CATEGORIAS = [
+  { id: "historicas", nome: "Históricas" },
+  { id: "cinema", nome: "Cinema" },
+  { id: "monstros", nome: "Monstros" },
+];
