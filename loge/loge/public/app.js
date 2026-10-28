@@ -143,7 +143,17 @@ function atualizarStatus() {
   document.querySelectorAll(".avatar").forEach((f) => {
     const eu = f.dataset.avatar === "eu";
     const ehHost = (eu ? myId : f.dataset.avatar) === hostId;
-    f.querySelector("figcaption").textContent = (ehHost ? "★ " : "") + (eu ? "Você" : f.dataset.nome);
+    const legenda = f.querySelector("figcaption");
+    legenda.replaceChildren();
+    if (ehHost) {
+      const selo = document.createElement("span");
+      selo.className = "selo-criador";
+      selo.textContent = "🎞️";
+      selo.title = "Criador da sala";
+      selo.setAttribute("aria-label", "Criador da sala");
+      legenda.append(selo, " ");
+    }
+    legenda.append(document.createTextNode(eu ? "Você" : f.dataset.nome));
   });
   $("liberar").hidden = !(myId && myId === hostId && sharerId && sharerId !== myId);
 }
