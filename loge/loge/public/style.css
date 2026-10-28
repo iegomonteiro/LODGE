@@ -338,10 +338,21 @@ body.tela-cheia-mobile #quadro.reacoes-visiveis #reagir {
   opacity:1; pointer-events:auto; transform:translateY(0);
 }
 body.tela-cheia-mobile #gif-panel:not([hidden]) {
-  position:absolute; z-index:103; left:12px; right:12px; bottom:max(4.25rem, calc(env(safe-area-inset-bottom) + 3.5rem));
-  max-height:min(68%, 420px); overflow:auto; margin:0; background:rgba(18,18,22,.96);
+  position:absolute; z-index:103; left:10px; right:10px;
+  bottom:max(8px, env(safe-area-inset-bottom));
+  max-height:28dvh; overflow:hidden; margin:0; padding:7px;
+  border-radius:10px; background:rgba(18,18,22,.97);
+  box-shadow:0 4px 18px rgba(0,0,0,.4);
 }
-body.tela-cheia-mobile #gif-results { max-height:min(42dvh, 260px); }
+body.tela-cheia-mobile #gif-panel .gif-painel-topo { gap:5px; }
+body.tela-cheia-mobile #gif-panel .gif-painel-topo input { min-height:32px; padding:5px 8px; font-size:14px; }
+body.tela-cheia-mobile #gif-panel .gif-fechar { width:30px; height:30px; }
+body.tela-cheia-mobile #gif-results {
+  grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px;
+  max-height:calc(28dvh - 48px); margin-top:5px; overflow-y:auto;
+}
+body.tela-cheia-mobile #gif-results .gif-opcao { height:clamp(34px, 9dvh, 52px); border-radius:5px; }
+body.tela-cheia-mobile #gif-results .gif-status { font-size:11px; margin:3px 0; }
 body.tela-cheia-mobile #quadro:not(.reacoes-visiveis) #gif-panel[hidden] { display:none; }
 @media (max-width: 900px) and (pointer: coarse) {
   #quadro:fullscreen, #quadro:-webkit-full-screen, #quadro.pseudo-cheia {
