@@ -102,6 +102,7 @@ function conectar() {
       case "locked": pedirSenha(true, "Muitas tentativas. Tente de novo em 1 minuto."); break;
       case "signal": await tratarSinal(msg.from, msg.data); break;
       case "chat": mensagem(msg); break;
+      case "reaction": mostrarReacao(msg); break;
       case "closed": encerrado = true; alert("Esta sala foi excluída pelo dono."); location.href = "/"; break;
       case "full": encerrado = true; alert("Sala cheia."); break;
       case "invalid-room": encerrado = true; alert("Link de sala inválido."); break;
@@ -647,6 +648,17 @@ $("form").onsubmit = (e) => {
 
 const gifBtn = $("gif-btn");
 const gifPanel = $("gif-panel");
+const reagirBtn = $("reagir");
+let modoReacao = false;
+
+reagirBtn.onclick = () => {
+  modoReacao = true;
+  gifPanel.hidden = false;
+  gifBtn.setAttribute("aria-expanded", "false");
+  if (!gifResults.childElementCount) buscarGifs("reaction");
+  gifSearch.placeholder = "Buscar reação GIF...";
+  gifSearch.focus();
+};
 const gifSearch = $("gif-search");
 const gifResults = $("gif-results");
 let buscaGifTimer = null;
@@ -654,14 +666,18 @@ let buscaGifAtual = 0;
 
 gifBtn.onclick = () => {
   const abrir = gifPanel.hidden;
+  modoReacao = false;
   gifPanel.hidden = !abrir;
   gifBtn.setAttribute("aria-expanded", String(abrir));
+  gifSearch.placeholder = "Buscar GIFs...";
   if (abrir && !gifResults.childElementCount) buscarGifs("");
   if (abrir) gifSearch.focus();
 };
 $("gif-close").onclick = () => {
   gifPanel.hidden = true;
   gifBtn.setAttribute("aria-expanded", "false");
+  modoReacao = false;
+  gifSearch.placeholder = "Buscar GIFs...";
 };
 gifSearch.addEventListener("input", () => {
   clearTimeout(buscaGifTimer);
@@ -699,7 +715,7 @@ async function buscarGifs(q) {
       img.alt = gif.alt || gif.title || "GIF";
       img.loading = "lazy";
       item.append(img);
-      item.addEventListener("click", () => enviarGif(gif));
+      item.addEventListener("click", () => modoReacao ? enviarReacao(gif) : enviarGif(gif));
       gifResults.append(item);
     }
   } catch (err) {
@@ -710,6 +726,34 @@ async function buscarGifs(q) {
     erro.textContent = err.message || "Erro ao buscar GIFs.";
     gifResults.append(erro);
   }
+}
+
+function enviarReacao(gif) {
+  if (ws?.readyState !== 1) return aviso("Reconectando; tente enviar a reação novamente.");
+  ws.send(JSON.stringify({ type: "reaction", gif: { url: gif.url, title: gif.title || "Reação", alt: gif.alt || gif.title || "Reação GIF" } }));
+  gifPanel.hidden = true;
+  modoReacao = false;
+  gifSearch.placeholder = "Buscar GIFs...";
+}
+
+function mostrarReacao({ gif }) {
+  if (!gif?.url) return;
+  const camada = $("reacoes");
+  if (!camada || camada.childElementCount >= 12) return;
+  const img = document.createElement("img");
+  img.className = "reacao-gif";
+  img.src = gif.url;
+  img.alt = "";
+  img.setAttribute("aria-hidden", "true");
+  img.draggable = false;
+  const largura = camada.clientWidth || 320;
+  const tamanho = Math.min(88, Math.max(52, largura * 0.1));
+  img.style.left = (Math.random() * Math.max(0, largura - tamanho)) + "px";
+  img.style.setProperty("--deriva", Math.round(Math.random() * 80 - 40) + "px");
+  img.style.setProperty("--giro", Math.round(Math.random() * 18 - 9) + "deg");
+  img.style.setProperty("--duracao", (3.5 + Math.random() * 1.5) + "s");
+  camada.append(img);
+  img.addEventListener("animationend", () => img.remove(), { once: true });
 }
 
 function enviarGif(gif) {
