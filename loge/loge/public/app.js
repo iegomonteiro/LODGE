@@ -733,6 +733,7 @@ function enviarReacao(gif) {
   ws.send(JSON.stringify({ type: "reaction", gif: { url: gif.url, title: gif.title || "Reação", alt: gif.alt || gif.title || "Reação GIF" } }));
   gifPanel.hidden = true;
   modoReacao = false;
+  gifBtn.setAttribute("aria-expanded", "false");
   gifSearch.placeholder = "Buscar GIFs...";
 }
 
@@ -752,6 +753,7 @@ function mostrarReacao({ gif }) {
   img.style.setProperty("--deriva", Math.round(Math.random() * 80 - 40) + "px");
   img.style.setProperty("--giro", Math.round(Math.random() * 18 - 9) + "deg");
   img.style.setProperty("--duracao", (3.5 + Math.random() * 1.5) + "s");
+  img.style.setProperty("--altura", (camada.clientHeight + tamanho + 100) + "px");
   camada.append(img);
   img.addEventListener("animationend", () => img.remove(), { once: true });
 }
