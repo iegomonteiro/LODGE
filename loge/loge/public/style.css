@@ -392,7 +392,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   body.teclado-ios #principal { display: none; }
   body.teclado-ios #lateral {
     grid-row: 1;
-    min-height: 0; height: 100%;
+    min-height: 0;
     margin: max(6px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
     border-radius: 12px;
   }
