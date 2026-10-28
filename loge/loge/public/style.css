@@ -378,6 +378,38 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .msg { max-width: 92%; }
   #form { margin: .4rem .6rem .6rem; }
 
+  /* Quando o teclado do iPhone abre, o JS limita a sala à área visual disponível
+     e coloca o chat em foco para manter o campo e os GIFs acessíveis. */
+  body.teclado-ios { overflow: hidden; }
+  body.teclado-ios #sala {
+    position: fixed; inset: 0 auto auto 0;
+    width: 100%; height: var(--altura-visual, 100dvh);
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  body.teclado-ios #barra,
+  body.teclado-ios #principal { display: none; }
+  body.teclado-ios #lateral {
+    grid-row: 1;
+    min-height: 0; height: 100%;
+    margin: max(6px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
+    border-radius: 12px;
+  }
+  body.teclado-ios #chat { min-height: 0; overflow: hidden; }
+  body.teclado-ios #msgs { min-height: 32px; }
+  body.teclado-ios .gif-painel:not([hidden]) {
+    display: flex; flex: 1 1 auto; flex-direction: column;
+    min-height: 0; margin: 0 .5rem .25rem; overflow: hidden;
+  }
+  body.teclado-ios .gif-painel-topo { flex: 0 0 auto; }
+  body.teclado-ios .gif-resultados {
+    flex: 1 1 auto; min-height: 72px; max-height: none;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  body.teclado-ios #form { flex: 0 0 auto; }
+
   /* abaixo de 16px o iPhone dá zoom ao tocar no campo e desalinha tudo */
   input, select, textarea { font-size: 16px; }
   .cartao input { width: min(18rem, 86vw); }
