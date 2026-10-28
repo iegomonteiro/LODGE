@@ -62,6 +62,14 @@ bitrate × number of viewers.
 Set them in the shell, or copy `.env.example` to `.env` and run
 `node --env-file=.env server.js` (Node 20.6+).
 
+## On iPhone
+
+The layout is tuned for the iPhone 13/14 (390 x 844 pt, portrait and landscape).
+Safari on iPhone can watch and chat, but it cannot share the screen or a file, so
+those buttons are hidden there. The fullscreen button uses the native video player
+(the only fullscreen Safari allows on iPhone). For a bar-less view, use
+Share > Add to Home Screen and open Loge from the icon.
+
 ## Room passwords and limits
 
 - The first person to join a room sets its password (leave it empty for an

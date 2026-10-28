@@ -2,9 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Loge</title>
   <meta name="theme-color" content="#0e0f13">
+  <!-- iPhone: "Adicionar à Tela de Início" abre o Loge sem a barra do Safari (tela inteira de verdade) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,10 +53,15 @@
     </header>
 
     <main id="principal">
-      <div id="quadro"><div id="palco"></div></div>
+      <div id="quadro">
+        <div id="palco"></div>
+        <button id="sair-cheia" class="btn icone" hidden aria-label="Sair da tela cheia" title="Sair da tela cheia">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
 
       <div id="controles">
-        <div class="grupo">
+        <div id="qualidade" class="grupo">
           <details>
             <summary class="btn">Qualidade</summary>
             <div class="painel">
@@ -118,7 +127,7 @@
       <div id="chat">
         <div id="msgs"></div>
         <form id="form">
-          <input id="texto" placeholder="Diga alguma coisa..." maxlength="500" autocomplete="off">
+          <input id="texto" placeholder="Diga alguma coisa..." maxlength="500" autocomplete="off" enterkeyhint="send">
           <button class="enviar" aria-label="Enviar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-6-6m6 6-6 6"/></svg>
           </button>

@@ -1,12 +1,15 @@
 const roomId = location.pathname.split("/").filter(Boolean).pop() || ""; // ignora barra no final da URL
 const $ = (id) => document.getElementById(id);
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+// O que este navegador consegue transmitir. Celulares em geral não capturam a tela; sem isso, os botões só confundem.
+const semCaptura = window.isSecureContext && !navigator.mediaDevices?.getDisplayMedia;
+const semArquivo = !(HTMLVideoElement.prototype.captureStream || HTMLVideoElement.prototype.mozCaptureStream);
 
 const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, senders:{tela:[]} }
 const nomes = new Map(); // id -> nome
 const locais = { tela: null }; // stream que estou transmitindo (tela ou arquivo)
 let ws, myId, hostId = null, sharerId = null, senha = "", nomeAtual = "";
-let encerrado = false, tentativas = 0, modoArquivo = false, estadoRemoto = null, arrastando = false, resolverReserva = null;
+let encerrado = false, tentativas = 0, timerReconexao = null, modoArquivo = false, estadoRemoto = null, arrastando = false, resolverReserva = null;
 let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 /* ---------- entrada e conexão ---------- */
@@ -30,6 +33,7 @@ $("entrar").onclick = async () => {
 };
 
 function conectar() {
+  clearTimeout(timerReconexao); // evita duas conexões se a reconexão foi antecipada
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}`);
   ws.onopen = () => ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha }));
@@ -76,7 +80,7 @@ function conectar() {
     limparPeers();
     if (encerrado) return;
     $("contagem").textContent = "Reconectando…";
-    setTimeout(conectar, Math.min(1000 * 2 ** tentativas++, 10000));
+    timerReconexao = setTimeout(conectar, Math.min(1000 * 2 ** tentativas++, 10000));
   };
 }
 
@@ -184,6 +188,8 @@ function criarPeer(id) {
     finally { peer.makingOffer = false; }
   };
   pc.ontrack = ({ streams: [stream] }) => stream && mostrarRemoto(id, stream);
+  // Troca de rede (Wi-Fi para 4G) ou volta do segundo plano no celular: tenta refazer o caminho em vez de ficar mudo
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") pc.restartIce?.(); };
 
   if (locais.tela) adicionarStream(peer, "tela");
   return peer;
@@ -275,7 +281,9 @@ for (const id of ["bitrate", "fps", "dica"]) {
 /* ---------- tela ---------- */
 $("tela").onclick = async () => {
   if (!navigator.mediaDevices?.getDisplayMedia) {
-    return aviso("Compartilhar tela exige HTTPS ou localhost (veja o README). Use um túnel HTTPS ou abra por http://localhost.");
+    return aviso(window.isSecureContext
+      ? "Este navegador não permite compartilhar a tela (comum em celulares). Use um computador."
+      : "Compartilhar tela exige HTTPS ou localhost (veja o README). Use um túnel HTTPS ou abra por http://localhost.");
   }
   const [w, h] = $("res").value.split("x").map(Number);
   let stream;
@@ -300,6 +308,7 @@ function transmitir(stream) {
   stream.getVideoTracks()[0]?.addEventListener("ended", pararTransmissao);
   peers.forEach((p) => adicionarStream(p, "tela"));
   atualizarBotoes();
+  atualizarWakeLock();
 }
 
 function pararTransmissao() {
@@ -318,6 +327,7 @@ function pararTransmissao() {
   if (sharerId === myId) sharerId = null;
   atualizarBotoes();
   atualizarStatus();
+  atualizarWakeLock();
 }
 $("parar").onclick = pararTransmissao;
 
@@ -346,9 +356,11 @@ $("arquivo").onchange = async (e) => {
 
 function atualizarBotoes() {
   const transmitindo = !!locais.tela;
-  $("tela").hidden = transmitindo;
-  $("arquivo-label").hidden = transmitindo;
+  $("tela").hidden = transmitindo || semCaptura;
+  $("arquivo-label").hidden = transmitindo || semArquivo;
   $("parar").hidden = !transmitindo;
+  $("qualidade").hidden = semCaptura && semArquivo; // só quem transmite usa a qualidade
+  document.body.classList.toggle("so-assiste", semCaptura && semArquivo);
 }
 
 /* ---------- vídeos remotos ---------- */
@@ -386,23 +398,50 @@ function mostrarRemoto(peerId, stream) {
 
     // Se for um iPhone (ou iPad), mostra o botão. No PC toca direto com som.
     if (isIOS) {
-      $("quadro").style.position = "relative"; // Garante que o botão fique preso na tela do vídeo
+      // (o #quadro já é position: relative no CSS; um style inline aqui vencia a tela cheia falsa e a deslocava)
       $("quadro").append(btnSom);
     } else {
       el.muted = false;
       el.volume = $("rc-vol").value / 100;
     }
 
-    stream.onremovetrack = () => { 
+    stream.onremovetrack = () => {
       if (!stream.getTracks().length) {
-        el.remove(); 
+        el.remove();
         btnSom.remove();
+        atualizarWakeLock();
       }
     };
   }
   if (el.srcObject !== stream) el.srcObject = stream;
   renderRemoto();
+  atualizarWakeLock();
 }
+
+/* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
+let wakeLock = null, pedindoWakeLock = false;
+async function atualizarWakeLock() {
+  if (!("wakeLock" in navigator) || pedindoWakeLock) return;
+  const querLigada = !!document.querySelector("#palco video");
+  try {
+    if (querLigada && !wakeLock && document.visibilityState === "visible") {
+      pedindoWakeLock = true;
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => (wakeLock = null));
+    } else if (!querLigada && wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  } catch { /* sem permissão ou bateria fraca: segue sem */ }
+  finally { pedindoWakeLock = false; }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  atualizarWakeLock(); // o navegador solta o wake lock quando a aba some
+  // o celular derruba o WebSocket em segundo plano: reconecta já, sem esperar o próximo ciclo do backoff
+  if (ws && !encerrado && ws.readyState === WebSocket.CLOSED) { tentativas = 0; conectar(); }
+});
 
 /* ---------- chat ---------- */
 $("form").onsubmit = (e) => {
@@ -440,19 +479,67 @@ function aviso(texto) {
 /* ---------- modo cinema, tela cheia, link e estatísticas ---------- */
 $("cinema").onchange = () => document.body.classList.toggle("cinema", $("cinema").checked);
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && document.body.classList.contains("cinema")) {
+  if (e.key !== "Escape") return;
+  if (quadro.classList.contains("pseudo-cheia")) return sairCheia();
+  if (document.body.classList.contains("cinema")) {
     $("cinema").checked = false;
     document.body.classList.remove("cinema");
   }
 });
 
-$("tela-cheia").onclick = () => {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else $("quadro").requestFullscreen?.();
+/* Tela cheia. Três caminhos, do melhor para o pior:
+   1) navegador com tela cheia de elemento (computador, Android, iPad): o quadro inteiro;
+   2) iPhone: o Safari só aceita o <video> (player nativo, gira sozinho para a horizontal);
+   3) sem nada disso (ainda sem vídeo): "tela cheia falsa", o quadro cobre a janela inteira. */
+const quadro = $("quadro");
+const cheiaNativa = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+function sairCheia() {
+  if (cheiaNativa()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  quadro.classList.remove("pseudo-cheia");
+  document.body.classList.remove("trava");
+  $("sair-cheia").hidden = true;
+  try { screen.orientation?.unlock?.(); } catch {}
+}
+
+function cheiaFalsa() {
+  quadro.classList.add("pseudo-cheia");
+  document.body.classList.add("trava");
+  $("sair-cheia").hidden = false;
+}
+
+$("tela-cheia").onclick = async () => {
+  if (cheiaNativa() || quadro.classList.contains("pseudo-cheia")) return sairCheia();
+
+  const pedir = quadro.requestFullscreen || quadro.webkitRequestFullscreen;
+  if (pedir) {
+    try {
+      await pedir.call(quadro);
+      $("sair-cheia").hidden = false; // o botão de sair fica dentro do quadro: o resto da página some em tela cheia
+      screen.orientation?.lock?.("landscape").catch(() => {}); // Android: deita a tela; iOS ignora
+      return;
+    } catch { /* recusou: tenta o próximo caminho */ }
+  }
+
+  const video = document.querySelector("#palco video");
+  if (video?.webkitEnterFullscreen) {
+    try { video.webkitEnterFullscreen(); return; } catch { /* sem metadados ainda */ }
+  }
+  cheiaFalsa();
 };
 
+$("sair-cheia").onclick = sairCheia;
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) sairCheia(); });
+document.addEventListener("webkitfullscreenchange", () => { if (!document.webkitFullscreenElement) sairCheia(); });
+
 $("copiar").onclick = async () => {
-  try { await navigator.clipboard.writeText(location.href); } catch { return; }
+  try { await navigator.clipboard.writeText(location.href); }
+  catch {
+    // sem área de transferência (HTTP puro, alguns celulares): usa o compartilhamento do sistema ou mostra o link
+    if (navigator.share) { try { await navigator.share({ title: "Loge", url: location.href }); } catch {} return; }
+    prompt("Copie o link da sala:", location.href);
+    return;
+  }
   $("copiar-txt").textContent = "Copiado!";
   setTimeout(() => ($("copiar-txt").textContent = "Copiar link"), 1500);
 };
@@ -539,3 +626,5 @@ $("rc-vol").oninput = () =>
   document.querySelectorAll("#palco video[data-stream]").forEach((v) => (v.volume = $("rc-vol").value / 100));
 // No iOS o navegador ignora video.volume (o volume é o do aparelho), então o controle seria inútil.
 if (isIOS) $("rc-vol").closest("label").hidden = true;
+
+atualizarBotoes(); // esconde o que este navegador não consegue fazer
