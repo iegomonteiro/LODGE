@@ -577,3 +577,38 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
     opacity: .45;
   }
 }
+
+/* ---------- iPhone: telas de entrada ocupam a tela toda, sem cartão flutuando nem rolagem à toa ---------- */
+@media (max-width: 480px) {
+  #entrada {
+    place-items: stretch;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  #entrada > .cartao {
+    width: 100%;
+    min-height: calc(100vh - 24px); min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    align-content: center;
+    gap: .75rem;
+    padding: 1.25rem 1.1rem;
+    border-radius: 20px;
+  }
+  .cartao > img { width: 72px; height: 72px; }
+  .cartao h1 { margin: .35rem 0 0; font-size: 2.2rem; letter-spacing: .3em; margin-right: -.3em; }
+  .cartao .tag { font-size: .8rem; letter-spacing: .18em; }
+  .cartao .sub { font-size: .92rem; }
+  .cartao input, .cartao .seletor { width: 100%; max-width: 22rem; }
+  .cartao .btn.grande { width: 100%; max-width: 22rem; justify-content: center; }
+  .disco.grande-disco { width: 72px; height: 72px; }
+  /* a página inicial com perfil rola normalmente, mas sem sobra nas laterais */
+  #entrada.home { align-items: stretch; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  #entrada.home > .painel-home { width: 100%; align-self: start; }
+}
+
+/* iPhone deitado (844 × 390): tudo compacto para caber sem rolar */
+@media (max-height: 520px) and (orientation: landscape) {
+  #entrada { padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); place-items: center; }
+  #entrada > .cartao { width: min(30rem, 100%); min-height: 0; gap: .45rem; padding: .8rem 1rem; }
+  .cartao > img { width: 44px; height: 44px; }
+  .cartao h1 { margin: 0; font-size: 1.5rem; }
+  .cartao .filete, .cartao .tag { display: none; }
+}
