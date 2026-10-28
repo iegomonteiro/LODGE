@@ -657,6 +657,13 @@ const viewportVisual = window.visualViewport;
 let campoChatFocado = false;
 function atualizarViewportChat() {
   if (!isIOS || !viewportVisual || $("sala").hidden) return;
+  // No modo de reprodução em tela cheia, o seletor de reação fica sobre o vídeo,
+  // então não aplicamos o layout alternativo do chat quando o teclado abre.
+  if (document.body.classList.contains("tela-cheia-mobile")) {
+    document.body.classList.remove("teclado-ios");
+    document.documentElement.style.removeProperty("--altura-visual");
+    return;
+  }
   const tecladoAberto = campoChatFocado &&
     viewportVisual.height < window.innerHeight * 0.82;
   document.body.classList.toggle("teclado-ios", tecladoAberto);
