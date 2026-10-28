@@ -902,56 +902,19 @@ const gifPainelProximo = gifPanel.nextSibling;
 const telaPequenaToque = () => matchMedia("(max-width: 900px) and (pointer: coarse)").matches;
 let timerControlesReacao = null;
 
-function moverControlesParaQuadro() {
-  if (!telaPequenaToque()) return;
-  quadro.append(reagirBtn, gifPanel);
-  document.body.classList.add("tela-cheia-mobile");
-}
+// Os controles de GIF permanecem no chat, inclusive no celular em tela cheia.
+// Mantemos esta função para chamadas existentes, sem mover elementos sobre o vídeo.
+function moverControlesParaQuadro() {}
 
 function restaurarControlesOriginais() {
-  if (reagirBtn.parentNode !== reagirOrigem) reagirOrigem.insertBefore(reagirBtn, reagirProximo);
-  if (gifPanel.parentNode !== gifPainelOrigem) gifPainelOrigem.insertBefore(gifPanel, gifPainelProximo);
   document.body.classList.remove("tela-cheia-mobile");
   quadro.classList.remove("reacoes-visiveis");
   if (timerControlesReacao) clearTimeout(timerControlesReacao);
   timerControlesReacao = null;
 }
 
-function programarOcultarControlesReacao() {
-  if (!telaPequenaToque() || !(cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) return;
-  if (timerControlesReacao) clearTimeout(timerControlesReacao);
-  timerControlesReacao = setTimeout(() => {
-    quadro.classList.remove("reacoes-visiveis");
-    timerControlesReacao = null;
-  }, 3200);
-}
+function programarOcultarControlesReacao() {}
 
-function mostrarControlesReacao() {
-  if (!telaPequenaToque() || !(cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) return;
-  quadro.classList.add("reacoes-visiveis");
-  if (timerControlesReacao) clearTimeout(timerControlesReacao);
-  timerControlesReacao = null;
-  if (gifPanel.hidden) programarOcultarControlesReacao();
-}
-
-quadro.addEventListener("click", (e) => {
-  // Cliques nos controles não contam como toque fora do seletor.
-  // A checagem precisa vir antes de fechar o painel: o clique em #reagir
-  // abre o seletor e também propaga até #quadro.
-  if (e.target.closest("#reagir, #sair-cheia, #gif-panel")) return;
-
-  // Em tela cheia no celular, tocar fora do seletor fecha os GIFs.
-  if (!gifPanel.hidden) {
-    gifPanel.hidden = true;
-    modoReacao = false;
-    gifBtn.setAttribute("aria-expanded", "false");
-    if (document.activeElement === gifSearch) gifSearch.blur();
-    campoChatFocado = false;
-    atualizarViewportChat();
-    programarOcultarControlesReacao();
-  }
-  mostrarControlesReacao();
-});
 
 function sairCheia() {
   if (cheiaNativa()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
@@ -988,14 +951,6 @@ $("tela-cheia").onclick = async () => {
   // Não usamos o player nativo do iPhone: ele esconde os controles HTML sobre o vídeo.
   cheiaFalsa();
 };
-
-reagirBtn.addEventListener("click", () => {
-  if (telaPequenaToque() && (cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) {
-    quadro.classList.add("reacoes-visiveis");
-    if (timerControlesReacao) clearTimeout(timerControlesReacao);
-    timerControlesReacao = null;
-  }
-});
 
 $("sair-cheia").onclick = sairCheia;
 document.addEventListener("fullscreenchange", () => {
