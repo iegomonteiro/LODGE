@@ -34,6 +34,43 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.static(path.join(__dirname, "public")));
 
+// Busca GIFs no servidor para que a chave do GIPHY nunca seja enviada ao navegador.
+app.get("/api/gifs", async (req, res) => {
+  const apiKey = process.env.GIPHY_API_KEY;
+  if (!apiKey) return res.status(503).json({ erro: "O seletor de GIFs ainda não foi configurado no servidor." });
+  const q = String(req.query.q || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 80);
+  const url = new URL("https://api.giphy.com/v1/gifs/search");
+  url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("q", q || "reaction");
+  url.searchParams.set("limit", "21");
+  url.searchParams.set("rating", "pg-13");
+  url.searchParams.set("lang", "pt");
+  try {
+    const resposta = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!resposta.ok) {
+      console.error("GIPHY respondeu", resposta.status);
+      return res.status(502).json({ erro: "O GIPHY não conseguiu buscar GIFs agora." });
+    }
+    const dados = await resposta.json();
+    const gifs = (dados.data || []).map((g) => ({
+      id: String(g.id || ""),
+      title: String(g.title || "GIF").slice(0, 120),
+      alt: String(g.alt_text || g.title || "GIF").slice(0, 160),
+      preview: g.images?.fixed_width_small?.url || g.images?.fixed_width?.url || "",
+      url: g.images?.fixed_width?.url || g.images?.original?.url || ""
+    })).filter((g) => {
+      try {
+        const u = new URL(g.url);
+        return u.protocol === "https:" && /^media\d*\.giphy\.com$/.test(u.hostname) && /\.gif$/.test(u.pathname);
+      } catch { return false; }
+    });
+    res.set("Cache-Control", "no-store").json({ gifs });
+  } catch (e) {
+    console.error("Falha na busca GIPHY:", e.message);
+    res.status(502).json({ erro: "Não foi possível conectar ao GIPHY." });
+  }
+});
+
 app.get("/sala/:id", (req, res) => {
   if (!ROOM_RE.test(req.params.id)) return res.redirect("/");
   res.sendFile(path.join(__dirname, "public", "sala.html"));
@@ -314,7 +351,22 @@ wss.on("connection", (ws) => {
 
     if (msg.type === "chat") {
       const text = String(msg.text || "").slice(0, 500);
-      if (text && ++janela.chat <= CHAT_LIMIT) broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text });
+      let gif = null;
+      if (msg.gif && typeof msg.gif === "object" && typeof msg.gif.url === "string") {
+        try {
+          const u = new URL(msg.gif.url);
+          if (u.protocol === "https:" && /^media\d*\.giphy\.com$/.test(u.hostname) &&
+              /^\/media\/[A-Za-z0-9]+\/[A-Za-z0-9_-]+\.gif$/.test(u.pathname)) {
+            gif = {
+              url: u.href,
+              title: limpaTexto(msg.gif.title, 120) || "GIF",
+              alt: limpaTexto(msg.gif.alt, 160) || "GIF enviado no chat"
+            };
+          }
+        } catch {}
+      }
+      if ((text || gif) && ++janela.chat <= CHAT_LIMIT)
+        broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text, gif });
     }
 
     // Só uma pessoa transmite por vez
