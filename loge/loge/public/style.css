@@ -75,7 +75,7 @@ input, select {
 
 /* ---------- entrada (início e nome) ---------- */
 #entrada {
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100vh; min-height: 100dvh; /* dvh: não corta atrás da barra de endereço do celular */
   display: grid; place-items: center;
   background: radial-gradient(46rem 32rem at 50% 38%, rgba(255, 179, 71, .11), transparent 65%);
 }
@@ -83,14 +83,321 @@ input, select {
 .cartao h1 {
   margin: 1rem 0 0;
   font-size: clamp(2.6rem, 9vw, 4.4rem);
-  margin-right: -.4em;
+  margin-right: -.4em; /* compensa o espaço depois da última letra */
 }
 .filete { width: 42px; height: 1px; background: var(--gold); opacity: .8; }
 .tag { margin: 0; color: var(--muted); font-weight: 300; letter-spacing: .24em; font-size: .95rem; }
 .sub { margin: 0; color: var(--muted); font-weight: 300; }
 .cartao input { width: min(18rem, 80vw); text-align: center; }
 
-/* (rest of original styles omitted for brevity in this simulation - full content is in the local file) */
+/* ---------- sala ---------- */
+#sala {
+  height: 100vh; height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: auto 1fr;
+}
+
+#barra {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  padding: .75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  transition: opacity .3s;
+}
+.logo-link { display: inline-flex; align-items: center; gap: .8rem; color: inherit; text-decoration: none; }
+.marca.mini { font-size: 1.2rem; }
+.acoes { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.presenca { display: inline-flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .9rem; margin-right: .6rem; }
+.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+#principal {
+  display: flex; flex-direction: column; gap: 1rem;
+  padding: 1.5rem; min-height: 0; min-width: 0;
+}
+
+#quadro {
+  flex: 1; min-height: 0;
+  position: relative; overflow: hidden;
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
+  background: #000;
+  box-shadow: 0 0 90px rgba(255, 179, 71, .07);
+  transition: box-shadow .5s;
+}
+
+#palco { height: 100%; display: grid; gap: .5rem; grid-auto-rows: 1fr; overflow: auto; }
+#reacoes { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; contain:layout paint; }
+.reacao-gif { position:absolute; bottom:-90px; width:clamp(52px,8vw,88px); height:clamp(52px,8vw,88px); object-fit:contain; border-radius:10px; filter:drop-shadow(0 3px 8px rgba(0,0,0,.55)); animation:subir-reacao var(--duracao,4s) cubic-bezier(.2,.65,.35,1) forwards; will-change:transform,opacity; }
+@keyframes subir-reacao { 0% { transform:translate3d(0,0,0) rotate(var(--giro,-7deg)) scale(.72); opacity:0; } 10% { opacity:1; } 82% { opacity:.95; } 100% { transform:translate3d(var(--deriva,0px),calc(-1 * var(--altura,100vh)),0) rotate(calc(var(--giro,-7deg) * -1)) scale(1); opacity:0; } }
+#reagir { white-space:nowrap; border-color:var(--gold-dim); color:var(--amber); }
+#reagir:hover { border-color:var(--amber); background:rgba(255,179,71,.1); }
+@media (prefers-reduced-motion: reduce) { .reacao-gif { animation-duration:2s; } }
+#palco video { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #000; }
+#palco:empty {
+  place-items: center; text-align: center;
+  background: radial-gradient(28rem 18rem at 50% 50%, rgba(255, 179, 71, .08), transparent 70%);
+}
+#palco:empty::before {
+  content: "Nenhuma transmissão ainda. Compartilhe a tela ou escolha um arquivo.";
+  color: var(--muted); font-weight: 300; padding: 2rem; max-width: 24rem;
+}
+
+/* controles abaixo do palco */
+#controles { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; transition: opacity .3s; }
+.grupo { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+#stats { color: var(--muted); font-size: .8rem; }
+
+details { position: relative; }
+details .painel {
+  position: absolute; z-index: 5; bottom: calc(100% + .5rem); left: 0;
+  display: grid; gap: .45rem; padding: .75rem; min-width: 11rem;
+  background: var(--surface); border: 1px solid var(--gold-dim); border-radius: var(--r);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
+
+/* modo cinema (cartão com chave) */
+.cinema-card {
+  position: relative;
+  display: flex; align-items: center; gap: .75rem;
+  padding: .45rem .8rem;
+  border: 1px solid var(--gold-dim); border-radius: 10px;
+  background: var(--surface);
+  color: var(--gold); cursor: pointer;
+}
+.cinema-card .textos { display: grid; line-height: 1.2; color: var(--ivory); }
+.cinema-card strong { font-weight: 500; font-size: .88rem; }
+.cinema-card small { color: var(--muted); font-size: .75rem; }
+#cinema { position: absolute; opacity: 0; pointer-events: none; }
+.chave { position: relative; width: 42px; height: 24px; border-radius: 99px; background: var(--line); transition: background .2s; }
+.chave::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ivory); transition: transform .2s;
+}
+#cinema:checked + .chave { background: var(--amber); }
+#cinema:checked + .chave::after { transform: translateX(18px); }
+#cinema:focus-visible + .chave { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* ---------- painel lateral: a sala ---------- */
+#lateral {
+  display: flex; flex-direction: column; min-height: 0;
+  margin: 1.5rem 1.5rem 1.5rem 0;
+  background: var(--surface);
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
+  transition: opacity .3s;
+}
+.lateral-topo { display: flex; align-items: baseline; justify-content: space-between; padding: 1.25rem 1.25rem .9rem; }
+.ao-vivo { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+
+#avatares {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  padding: 0 1.25rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.avatar { margin: 0; display: grid; justify-items: center; gap: .35rem; }
+.avatar figcaption { font-size: .75rem; color: var(--muted); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.disco {
+  position: relative; overflow: hidden;
+  width: 58px; height: 58px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1.5px solid rgba(217, 164, 65, .35);
+  font-family: var(--serif); font-size: 1.35rem; color: var(--ivory);
+  transition: border-color .3s, box-shadow .3s;
+}
+.avatar.ativo .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
+
+/* ---------- chat de voz ---------- */
+#mic.ao-vivo { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 0 1px rgba(255, 179, 71, .35), 0 0 16px rgba(255, 179, 71, .18); }
+#mic.mudo { border-color: #c8584a; color: #ff8f80; background: #2a1b1d; }
+.avatar { position: relative; }
+.avatar .voz {
+  position: absolute; top: 0; left: calc(50% + 12px);
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .72rem; line-height: 1;
+  background: var(--surface2); border: 1px solid var(--gold-dim);
+}
+.avatar[data-voz="mudo"] .voz { background: #3a1f22; border-color: #c8584a; }
+.avatar.falando .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
+
+/* ---------- chat ---------- */
+#chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#msgs { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: 1rem 1.25rem; }
+#msgs > :first-child { margin-top: auto; }
+.msg { display: flex; flex-direction: column; align-items: flex-start; max-width: 88%; }
+.msg.eu { align-self: flex-end; align-items: flex-end; }
+.msg .autor { font-size: .72rem; color: var(--muted); padding: 0 .35rem .15rem; }
+.balao { background: var(--surface2); padding: .5rem .85rem; border-radius: var(--r); word-break: break-word; }
+.msg.eu .balao { background: rgba(255, 179, 71, .07); border: 1px solid var(--gold-dim); }
+.aviso { align-self: center; margin: 0; color: var(--muted); font-size: .78rem; font-style: italic; }
+
+.balao-gif { display: grid; gap: .4rem; max-width: 100%; }
+.chat-gif { display: block; width: min(100%, 260px); max-height: 220px; object-fit: contain; border-radius: 8px; }
+.gif-botao {
+  flex: 0 0 auto; min-width: 42px; height: 34px; padding: 0 .45rem;
+  border: 1px solid var(--gold-dim); border-radius: 9px; background: var(--surface2);
+  color: var(--amber); font-size: .72rem; font-weight: 800; cursor: pointer;
+}
+.gif-botao:hover, .gif-botao[aria-expanded="true"] { border-color: var(--amber); background: rgba(255, 179, 71, .1); }
+.gif-painel {
+  margin: 0 1.25rem .35rem; padding: .65rem; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px rgba(0,0,0,.25);
+}
+.gif-painel[hidden] { display: none; }
+.gif-painel-topo { display: flex; gap: .4rem; align-items: center; }
+.gif-painel-topo input { min-width: 0; flex: 1; }
+.gif-fechar {
+  width: 32px; height: 32px; flex: 0 0 auto; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 1.2rem; cursor: pointer;
+}
+.gif-resultados {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem;
+  max-height: 230px; overflow: auto; margin-top: .55rem;
+}
+.gif-opcao { min-width: 0; height: 76px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: var(--night); cursor: pointer; }
+.gif-opcao:hover, .gif-opcao:focus-visible { border-color: var(--amber); outline: 1px solid var(--amber); }
+.gif-opcao img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gif-status { grid-column: 1 / -1; margin: .6rem 0; color: var(--muted); font-size: .82rem; }
+.gif-credito { display: block; margin-top: .45rem; color: var(--muted); font-size: .68rem; text-align: right; }
+
+#form {
+  display: flex; align-items: center; gap: .5rem;
+  margin: .5rem 1.25rem 1.25rem; padding: .35rem .35rem .35rem .9rem;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--night);
+}
+#form input { flex: 1; min-width: 0; border: 0; background: transparent; padding: .4rem 0; }
+#form input:focus-visible { outline: none; }
+#form:focus-within { border-color: var(--gold); }
+.enviar {
+  display: grid; place-items: center; width: 34px; height: 34px;
+  border: 0; border-radius: 9px; background: var(--amber); color: #1a1205; cursor: pointer;
+}
+.enviar:hover { box-shadow: 0 0 14px rgba(255, 179, 71, .5); }
+
+/* ---------- modo cinema: a interface some e reaparece com o mouse ---------- */
+body.cinema { background: #000; }
+body.cinema #barra, body.cinema #lateral, body.cinema #controles { opacity: 0; }
+body.cinema #barra:hover, body.cinema #lateral:hover, body.cinema #controles:hover,
+body.cinema #barra:focus-within, body.cinema #lateral:focus-within, body.cinema #controles:focus-within { opacity: 1; }
+body.cinema #quadro { box-shadow: 0 0 160px rgba(255, 179, 71, .2); }
+/* no toque não existe "passar o mouse" nem Esc: a interface fica discreta, mas visível para dar para desligar o modo */
+@media (hover: none) {
+  body.cinema #barra, body.cinema #lateral, body.cinema #controles { opacity: .35; }
+}
+
+/* ---------- tela cheia (todas as telas) ----------
+   Fica antes das regras de celular de propósito: elas definem aspect-ratio e max-height no quadro,
+   e em tela cheia o quadro precisa ocupar tudo, sem proporção fixa. */
+#quadro:fullscreen, #quadro:-webkit-full-screen {
+  aspect-ratio: auto !important; max-height: none !important;
+  width: 100% !important; height: 100% !important;
+  border: 0; border-radius: 0; box-shadow: none;
+}
+/* alternativa para quando o navegador não oferece tela cheia (iPhone sem vídeo ainda carregado) */
+#quadro.pseudo-cheia {
+  position: fixed; inset: 0; z-index: 100;
+  width: 100vw; height: 100vh; height: 100dvh;
+  aspect-ratio: auto !important; max-height: none !important;
+  border: 0; border-radius: 0; box-shadow: none;
+}
+body.trava { overflow: hidden; }
+#sair-cheia {
+  position: absolute; z-index: 101;
+  top: max(.75rem, env(safe-area-inset-top)); right: max(.75rem, env(safe-area-inset-right));
+  background: rgba(14, 15, 19, .72); backdrop-filter: blur(6px);
+}
+
+/* só assiste (celular sem captura de tela): a mensagem do palco vazio não pode mandar compartilhar */
+body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a transmissão."; }
+
+/* ---------- iPhone 13 / 14 ----------
+   Medida de referência: 390 × 844 pt (retrato) e 844 × 390 pt (paisagem), com entalhe no topo (47pt)
+   e barra de gestos embaixo (34pt). Vale para qualquer celular de até 480pt de largura. */
+@media (max-width: 480px) {
+  html, body { overscroll-behavior: none; }
+  body { font-size: 15px; -webkit-text-size-adjust: 100%; }
+
+  /* a página nunca rola: cabeçalho, vídeo e controles ocupam o topo e o chat preenche o que sobra */
+  #sala {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: 100vh; height: 100dvh;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+  }
+
+  /* cabeçalho de 56pt: marca à esquerda; contagem e copiar à direita */
+  #barra {
+    padding: max(.45rem, env(safe-area-inset-top)) 12px .45rem;
+    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start; /* se vierem mais botões, descem para a 2ª linha em vez de alargar a página */
+    min-height: 56px;
+  }
+  #barra .btn, #barra .presenca { flex: none; }
+  .acoes { display: contents; }
+  .logo-link { gap: .5rem; margin-right: auto; }
+  .logo-link img { width: 26px; height: 26px; }
+  .marca.mini { font-size: .95rem; letter-spacing: .28em; }
+  .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
+  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
+  #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
+  .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
+  #liberar, #parar { padding: .5rem .7rem; font-size: .85rem; }
+  #tela, #arquivo-label { padding: .5rem .7rem; font-size: .85rem; }
+
+  /* vídeo: 366 × 206pt (16:9) com 12pt de margem; nunca passa de 38% da altura da tela */
+  #principal { padding: 0 12px 10px; gap: 10px; }
+  #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 38vh; max-height: 38dvh; width: 100%; border-radius: 14px; }
+
+  /* controles: uma linha de 44pt (modo cinema ocupa o espaço que sobra, tela cheia à direita) */
+  #controles { gap: 8px; flex-wrap: wrap; justify-content: stretch; }
+  #qualidade { order: 3; }
+  #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
+  #remoto .vol { display: none; } /* o volume do celular é o dos botões do aparelho */
+  #rc-seek { flex: 1; width: auto; min-width: 0; }
+  #rc-tempo { white-space: nowrap; font-size: .75rem; }
+  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
+  .cinema-card { flex: 1; padding: .3rem .7rem; gap: .6rem; }
+  .cinema-card small { display: none; }
+  .cinema-card strong { font-size: .85rem; }
+  details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: calc(100vw - 24px); }
+
+  /* a sala: ocupa o resto da altura, com respiro para a barra de gestos */
+  #lateral { margin: 0 12px max(12px, env(safe-area-inset-bottom)); min-height: 0; border-radius: 14px; }
+  .lateral-topo { padding: .7rem 1rem .4rem; }
+  .marca-titulo { font-size: 1.05rem; }
+  .ao-vivo { font-size: .66rem; }
+  #avatares { flex-wrap: nowrap; overflow-x: auto; gap: .7rem; padding: 0 1rem .55rem; scrollbar-width: none; }
+  #avatares::-webkit-scrollbar { display: none; }
+  .avatar { flex: none; }
+  .disco { width: 40px; height: 40px; font-size: 1rem; }
+  .avatar figcaption { font-size: .68rem; max-width: 56px; }
+  #msgs { padding: .6rem 1rem; gap: .45rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .msg { max-width: 92%; }
+  #form { margin: .4rem .6rem .6rem; }
+
+  /* Quando o teclado do iPhone abre, o JS limita a sala à área visual disponível
+     e coloca o chat em foco para manter o campo e os GIFs acessíveis. */
+  body.teclado-ios { overflow: hidden; }
+  body.teclado-ios #sala {
+    position: fixed; inset: 0 auto auto 0;
+    width: 100%; height: var(--altura-visual, 100dvh);
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  body.teclado-ios #barra,
+  body.teclado-ios #principal { display: none; }
+  body.teclado-ios #lateral {
+    grid-row: 1;
+    min-height: 0;
+    margin: max(6px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
+    border-radius: 12px;
+  }
+  body.teclado-ios #chat { min-height: 0; overflow: hidden; }
+}
 
 /* ---------- seletor de avatares ---------- */
 .avatar-preview {
