@@ -105,7 +105,6 @@ $("novo-arquivo").addEventListener("change", async () => {
   const foto = await escolherFoto($("novo-arquivo"), $("novo-foto"), nome);
   if (foto) {
     fotoNova = foto;
-    // desmarca os ícones da grade
     document.querySelectorAll("#avatar-grid .avatar-opcao").forEach((b) => b.classList.remove("selecionado"));
   }
 });
@@ -127,11 +126,9 @@ $("novo-nome").addEventListener("keydown", (e) => {
   if (e.key === "Enter") $("ir-avatar").click();
 });
 
-$("tenho-codigo").onclick = () => { $("recuperar").hidden = !$("recuperar").hidden; };
 $("recuperar-ok").onclick = () => {
   const nome = $("novo-nome").value.trim();
   if (!nome) return erroPerfil("Digite seu nome primeiro.");
-  // se ainda não escolheu avatar, usa o que tiver
   const p = perfilDoCodigo($("codigo-in").value, nome, fotoNova);
   if (!p) return erroPerfil("Esse código não está certo. Confira se copiou inteiro.");
   perfil = p;
