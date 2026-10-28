@@ -4,7 +4,7 @@
 
 const CHAVE = "loge:perfil";
 const FOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
-const AVATAR_RE = /^\/avatars\/(historicas|cinema|monstros)\/foto_\d{2}\.png$/;
+const AVATAR_RE = /^\/avatars_loge\/avatars\/(historicas|cinema|monstros)\/foto_\d{2}\.png$/;
 
 const hex = (n) =>
   Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -85,9 +85,9 @@ export function pintarDisco(disco, nome, foto) {
 
 // Lista de avatares disponíveis por categoria
 export const AVATARES = {
-  historicas: Array.from({ length: 12 }, (_, i) => `/avatars/historicas/foto_${String(i + 1).padStart(2, "0")}.png`),
-  cinema: Array.from({ length: 12 }, (_, i) => `/avatars/cinema/foto_${String(i + 1).padStart(2, "0")}.png`),
-  monstros: Array.from({ length: 16 }, (_, i) => `/avatars/monstros/foto_${String(i + 1).padStart(2, "0")}.png`),
+  historicas: Array.from({ length: 12 }, (_, i) => `/avatars_loge/avatars/historicas/foto_${String(i + 1).padStart(2, "0")}.png`),
+  cinema: Array.from({ length: 12 }, (_, i) => `/avatars_loge/avatars/cinema/foto_${String(i + 1).padStart(2, "0")}.png`),
+  monstros: Array.from({ length: 16 }, (_, i) => `/avatars_loge/avatars/monstros/foto_${String(i + 1).padStart(2, "0")}.png`),
 };
 
 export const CATEGORIAS = [
