@@ -349,6 +349,41 @@ body.tela-cheia-mobile #quadro:not(.reacoes-visiveis) #gif-panel[hidden] { displ
   }
 }
 
+/* No iPhone deitado, o palco ocupa a viewport inteira. O vídeo usa cover
+   para eliminar as faixas laterais; isso pode cortar um pouco da imagem. */
+@media (max-width: 940px) and (orientation: landscape) and (pointer: coarse) {
+  #quadro:fullscreen, #quadro:-webkit-full-screen, #quadro.pseudo-cheia {
+    position:fixed !important;
+    inset:0 !important;
+    width:100vw !important;
+    height:100vh !important;
+    height:100dvh !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    overflow:hidden !important;
+    background:#000;
+  }
+  #quadro:fullscreen #palco,
+  #quadro:-webkit-full-screen #palco,
+  #quadro.pseudo-cheia #palco {
+    width:100%;
+    height:100%;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+  }
+  #quadro:fullscreen #palco video,
+  #quadro:-webkit-full-screen #palco video,
+  #quadro.pseudo-cheia #palco video {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+}
+
 /* só assiste (celular sem captura de tela): a mensagem do palco vazio não pode mandar compartilhar */
 body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a transmissão."; }
 
