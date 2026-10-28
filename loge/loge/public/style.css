@@ -129,6 +129,12 @@ input, select {
 }
 
 #palco { height: 100%; display: grid; gap: .5rem; grid-auto-rows: 1fr; overflow: auto; }
+#reacoes { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; contain:layout paint; }
+.reacao-gif { position:absolute; bottom:-90px; width:clamp(52px,8vw,88px); height:clamp(52px,8vw,88px); object-fit:contain; border-radius:10px; filter:drop-shadow(0 3px 8px rgba(0,0,0,.55)); animation:subir-reacao var(--duracao,4s) cubic-bezier(.2,.65,.35,1) forwards; will-change:transform,opacity; }
+@keyframes subir-reacao { 0% { transform:translate3d(0,0,0) rotate(var(--giro,-7deg)) scale(.72); opacity:0; } 10% { opacity:1; } 82% { opacity:.95; } 100% { transform:translate3d(var(--deriva,0px),-115%,0) rotate(calc(var(--giro,-7deg) * -1)) scale(1); opacity:0; } }
+#reagir { white-space:nowrap; border-color:var(--gold-dim); color:var(--amber); }
+#reagir:hover { border-color:var(--amber); background:rgba(255,179,71,.1); }
+@media (prefers-reduced-motion: reduce) { .reacao-gif { animation-duration:2s; } }
 #palco video { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #000; }
 #palco:empty {
   place-items: center; text-align: center;
