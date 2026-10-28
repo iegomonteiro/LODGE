@@ -286,11 +286,11 @@ wss.on("connection", (ws) => {
   let roomId = null;
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
-  const janela = { t: Date.now(), n: 0, chat: 0 };
+  const janela = { t: Date.now(), n: 0, chat: 0, reaction: 0 };
 
   ws.on("message", (raw) => {
     const agora = Date.now();
-    if (agora - janela.t > 10_000) { janela.t = agora; janela.n = 0; janela.chat = 0; }
+    if (agora - janela.t > 10_000) { janela.t = agora; janela.n = 0; janela.chat = 0; janela.reaction = 0; }
     if (++janela.n > MSG_LIMIT) return ws.close(1008, "rate limit");
 
     let msg;
@@ -380,6 +380,22 @@ wss.on("connection", (ws) => {
       }
       if ((text || gif) && ++janela.chat <= CHAT_LIMIT)
         broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text, gif });
+    }
+
+    // Reações GIF pequenas que sobem sobre o vídeo; limite de 4 por conexão a cada 10 segundos.
+    if (msg.type === "reaction") {
+      if (++janela.reaction > 4) return;
+      let gif = null;
+      if (msg.gif && typeof msg.gif === "object" && typeof msg.gif.url === "string") {
+        try {
+          const u = new URL(msg.gif.url);
+          if (u.protocol === "https:" && /^media\\d*\\.giphy\\.com$/.test(u.hostname) &&
+              /^\\/media\\/[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+)*\\.gif$/i.test(u.pathname)) {
+            gif = { url: u.href, title: limpaTexto(msg.gif.title, 120) || "Reação", alt: limpaTexto(msg.gif.alt, 160) || "Reação GIF" };
+          }
+        } catch {}
+      }
+      if (gif) broadcast(room, { type: "reaction", from: id, name: room.get(id)?.name, gif });
     }
 
     // Só uma pessoa transmite por vez
