@@ -332,7 +332,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   /* cabeçalho de 56pt: marca à esquerda; contagem e copiar à direita */
   #barra {
     padding: max(.45rem, env(safe-area-inset-top)) 12px .45rem;
-    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start;
+    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start; /* se vierem mais botões, descem para a 2ª linha em vez de alargar a página */
     min-height: 56px;
   }
   #barra .btn, #barra .presenca { flex: none; }
@@ -342,7 +342,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .marca.mini { font-size: .95rem; letter-spacing: .28em; }
   .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
   #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt, #mic-txt { display: none; }
+  #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
   .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
   #liberar, #parar { padding: .5rem .7rem; font-size: .85rem; }
   #tela, #arquivo-label { padding: .5rem .7rem; font-size: .85rem; }
@@ -351,11 +351,11 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   #principal { padding: 0 12px 10px; gap: 10px; }
   #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 38vh; max-height: 38dvh; width: 100%; border-radius: 14px; }
 
-  /* controles */
+  /* controles: uma linha de 44pt (modo cinema ocupa o espaço que sobra, tela cheia à direita) */
   #controles { gap: 8px; flex-wrap: wrap; justify-content: stretch; }
   #qualidade { order: 3; }
   #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; }
+  #remoto .vol { display: none; } /* o volume do celular é o dos botões do aparelho */
   #rc-seek { flex: 1; width: auto; min-width: 0; }
   #rc-tempo { white-space: nowrap; font-size: .75rem; }
   #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
@@ -364,7 +364,7 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .cinema-card strong { font-size: .85rem; }
   details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: calc(100vw - 24px); }
 
-  /* a sala */
+  /* a sala: ocupa o resto da altura, com respiro para a barra de gestos */
   #lateral { margin: 0 12px max(12px, env(safe-area-inset-bottom)); min-height: 0; border-radius: 14px; }
   .lateral-topo { padding: .7rem 1rem .4rem; }
   .marca-titulo { font-size: 1.05rem; }
@@ -378,6 +378,8 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .msg { max-width: 92%; }
   #form { margin: .4rem .6rem .6rem; }
 
+  /* Quando o teclado do iPhone abre, o JS limita a sala à área visual disponível
+     e coloca o chat em foco para manter o campo e os GIFs acessíveis. */
   body.teclado-ios { overflow: hidden; }
   body.teclado-ios #sala {
     position: fixed; inset: 0 auto auto 0;
@@ -395,6 +397,276 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
     border-radius: 12px;
   }
   body.teclado-ios #chat { min-height: 0; overflow: hidden; }
+  body.teclado-ios #msgs { min-height: 32px; }
+  body.teclado-ios .gif-painel:not([hidden]) {
+    display: flex; flex: 1 1 auto; flex-direction: column;
+    min-height: 0; margin: 0 .5rem .25rem; overflow: hidden;
+  }
+  body.teclado-ios .gif-painel-topo { flex: 0 0 auto; }
+  body.teclado-ios .gif-resultados {
+    flex: 1 1 auto; min-height: 72px; max-height: none;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  body.teclado-ios #form { flex: 0 0 auto; }
+
+  /* abaixo de 16px o iPhone dá zoom ao tocar no campo e desalinha tudo */
+  input, select, textarea { font-size: 16px; }
+  .cartao input { width: min(18rem, 86vw); }
+  .cartao { padding: 1.5rem 1rem; }
+}
+
+/* iPhone deitado (844 × 390): o vídeo ocupa a altura toda à esquerda; controles e sala ficam empilhados à direita */
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
+  #sala {
+    grid-template-columns: minmax(0, 1fr) 264px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: 100vh; height: 100dvh;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+  }
+  #barra { grid-column: 1 / -1; min-height: 48px; padding: .35rem 12px; flex-wrap: nowrap; justify-content: flex-start; }
+  #barra .btn, #barra .presenca { flex: none; }
+  .acoes { display: contents; }
+  .logo-link { margin-right: auto; }
+  .logo-link img { width: 24px; height: 24px; }
+  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
+  #copiar-txt, #mic-txt { display: none; }
+  .avatar .voz { left: calc(50% + 5px); top: -2px; width: 18px; height: 18px; font-size: .6rem; }
+
+  #principal { display: contents; } /* quadro, controles e sala viram itens da grade da sala */
+  #quadro { grid-column: 1; grid-row: 2 / 4; margin: 0 8px 8px 12px; aspect-ratio: auto; max-height: none; min-height: 0; width: auto; }
+  #controles { grid-column: 2; grid-row: 2; margin: 0 12px 8px 0; gap: 8px; flex-wrap: wrap; }
+  #lateral { grid-column: 2; grid-row: 3; margin: 0 12px 8px 0; min-height: 0; }
+  .lateral-topo { display: none; }
+  #avatares { padding: .5rem .9rem .4rem; flex-wrap: nowrap; overflow-x: auto; gap: .6rem; scrollbar-width: none; }
+  #avatares::-webkit-scrollbar { display: none; }
+  .avatar { flex: none; gap: .2rem; }
+  .disco { width: 32px; height: 32px; font-size: .9rem; }
+  .avatar figcaption { font-size: .66rem; max-width: 52px; }
+
+  #qualidade { order: 3; }
+  #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
+  #remoto .vol { display: none; }
+  #rc-seek { flex: 1; width: auto; min-width: 0; }
+  #rc-tempo { white-space: nowrap; font-size: .72rem; }
+  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
+  .cinema-card { flex: 1; padding: .3rem .6rem; gap: .5rem; }
+  .cinema-card small { display: none; }
+  .cinema-card strong { font-size: .8rem; }
+  details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: 240px; }
+}
+
+/* toque: alvos de pelo menos 44pt e sem atraso de duplo toque */
+@media (pointer: coarse) {
+  .btn, .cinema-card { min-height: 44px; }
+  .btn.icone { min-width: 44px; justify-content: center; }
+  .enviar { width: 44px; height: 44px; }
+  input[type="range"] { height: 32px; }
+  button, .btn, summary, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+}
+
+/* tablets e janelas estreitas (481 a 900pt): empilha como antes, sem rolagem da página */
+@media (min-width: 481px) and (max-width: 900px) and (orientation: portrait) {
+  #sala { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); }
+  #principal { padding: .75rem 1rem; }
+  #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 42dvh; }
+  #lateral { margin: 0 1rem 1rem; min-height: 0; }
+  details .painel { left: auto; right: 0; }
+}
+
+/* ---------- controles de quem assiste ---------- */
+input[type="range"] { padding: 0; border: 0; background: transparent; accent-color: var(--amber); }
+#rc-seek { width: min(24rem, 38vw); }
+#rc-tempo, .vol { color: var(--muted); font-size: .8rem; }
+.vol { display: inline-flex; align-items: center; gap: .4rem; }
+
+/* ---------- perfil e salas fixas (página inicial) ---------- */
+.link { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; padding: .3rem; }
+.link:hover { color: var(--amber); }
+.erro { color: #ff8f80; }
+.peq { font-size: .85rem; }
+.bloco { display: grid; gap: .7rem; justify-items: center; }
+.bloco.linha { grid-template-columns: 1fr; width: 100%; }
+.foto-botao { display: grid; justify-items: center; gap: .3rem; cursor: pointer; color: var(--muted); }
+.disco.grande-disco { width: 88px; height: 88px; font-size: 2rem; border-style: dashed; }
+#entrada.home { align-items: start; padding: 2rem 1rem; }
+.painel-home { width: min(36rem, 100%); display: grid; gap: .9rem; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+.topo-home { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.topo-home .quem { display: grid; flex: 1; min-width: 6rem; }
+.topo-home .quem small { color: var(--muted); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; }
+.topo-home .disco { flex: none; }
+.painel-home .bloco { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 1rem; justify-items: stretch; }
+.painel-home .bloco input { width: 100%; text-align: left; }
+.painel-home .bloco .foto-botao { justify-self: center; }
+#codigo-txt { display: block; word-break: break-all; user-select: all; padding: .6rem; border-radius: 8px; background: var(--night); border: 1px solid var(--line); font-size: .8rem; }
+.lista { display: grid; gap: .6rem; }
+.sala-fixa { display: grid; gap: .6rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: .8rem 1rem; }
+.sala-fixa .info { display: grid; min-width: 0; }
+.sala-fixa small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acoes-fixa { display: flex; flex-wrap: wrap; gap: .4rem; }
+.acoes-fixa a.btn { text-decoration: none; }
+
+@media (min-width: 560px) { .bloco.linha { grid-template-columns: 1fr 1fr; } .bloco.linha > button, .bloco.linha > p { grid-column: 1 / -1; } }
+#quem { display: flex; align-items: center; gap: .6rem; }
+#quem .disco { width: 44px; height: 44px; }
+
+ 
+/* ---------- luz cinematográfica nos cartões de entrada ---------- */
+/* Uma faixa de luz fosca atravessa o cartão de um lado ao outro. Só CSS: sem imagens ou bibliotecas. */
+#entrada > .cartao {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(217, 164, 65, .16);
+  border-radius: 22px;
+  background: rgba(14, 15, 19, .42);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, .18);
+}
+#entrada > .cartao::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -45%;
+  bottom: -45%;
+  left: -75%;
+  width: 58%;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 179, 71, .015) 18%,
+    rgba(255, 224, 166, .10) 43%,
+    rgba(255, 190, 92, .19) 50%,
+    rgba(255, 224, 166, .08) 58%,
+    rgba(255, 179, 71, .012) 82%,
+    transparent 100%
+  );
+  filter: blur(13px);
+  transform: skewX(-12deg);
+  animation: luz-projetor 7s cubic-bezier(.45, 0, .35, 1) infinite;
+}
+#entrada > .cartao::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 42%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255, 230, 190, .055), transparent);
+  filter: blur(5px);
+  transform: skewX(-12deg);
+  animation: luz-projetor-reflexo 7s cubic-bezier(.45, 0, .35, 1) infinite;
+}
+@keyframes luz-projetor {
+  0%, 8% { left: -75%; opacity: .3; }
+  48% { opacity: 1; }
+  88%, 100% { left: 125%; opacity: .38; }
+}
+@keyframes luz-projetor-reflexo {
+  0%, 8% { left: -60%; opacity: .2; }
+  48% { opacity: .85; }
+  88%, 100% { left: 135%; opacity: .25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #entrada > .cartao::before,
+  #entrada > .cartao::after {
+    animation: none;
+    left: 20%;
+    opacity: .45;
+  }
+}
+
+/* ---------- iPhone: telas de entrada ocupam a tela toda, sem cartão flutuando nem rolagem à toa ---------- */
+@media (max-width: 480px) {
+  #entrada {
+    place-items: stretch;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  #entrada > .cartao {
+    width: 100%;
+    min-height: calc(100vh - 24px); min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    align-content: center;
+    gap: .75rem;
+    padding: 1.25rem 1.1rem;
+    border-radius: 20px;
+  }
+  .cartao > img { width: 72px; height: 72px; }
+  .cartao h1 { margin: .35rem 0 0; font-size: 2.2rem; letter-spacing: .3em; margin-right: -.3em; }
+  .cartao .tag { font-size: .8rem; letter-spacing: .18em; }
+  .cartao .sub { font-size: .92rem; }
+  .cartao input, .cartao .seletor { width: 100%; max-width: 22rem; }
+  .cartao .btn.grande { width: 100%; max-width: 22rem; justify-content: center; }
+  .disco.grande-disco { width: 72px; height: 72px; }
+  /* a página inicial com perfil rola normalmente, mas sem sobra nas laterais */
+  #entrada.home { align-items: stretch; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  #entrada.home > .painel-home { width: 100%; align-self: start; }
+}
+
+/* iPhone deitado (844 × 390): tudo compacto para caber sem rolar */
+@media (max-height: 520px) and (orientation: landscape) {
+  #entrada { padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); place-items: center; }
+  #entrada > .cartao { width: min(30rem, 100%); min-height: 0; gap: .45rem; padding: .8rem 1rem; }
+  .cartao > img { width: 44px; height: 44px; }
+  .cartao h1 { margin: 0; font-size: 1.5rem; }
+  .cartao .filete, .cartao .tag { display: none; }
+}
+
+/* ---------- entrada desktop: proporções próprias para monitores ---------- */
+/* Mantém o layout compacto do celular; em telas grandes, o cartão respira e fica centralizado. */
+@media (min-width: 901px) and (min-height: 521px) {
+  #entrada.home:has(> #sem-perfil:not([hidden])),
+  #entrada.home:has(> #rapida:not([hidden])) {
+    min-height: 100vh;
+    min-height: 100dvh;
+    place-items: center;
+    padding: 3rem 2rem;
+  }
+
+  #entrada.home > #sem-perfil.cartao,
+  #entrada.home > #rapida.cartao {
+    width: min(36rem, calc(100vw - 4rem));
+    gap: 1.15rem;
+    padding: 3.25rem clamp(2.5rem, 4vw, 4rem);
+    border-radius: 26px;
+  }
+
+  #entrada.home > #sem-perfil.cartao > img,
+  #entrada.home > #rapida.cartao > img {
+    width: 88px;
+    height: 88px;
+  }
+
+  #entrada.home > #sem-perfil.cartao h1,
+  #entrada.home > #rapida.cartao h1 {
+    font-size: clamp(3.4rem, 5vw, 4.6rem);
+  }
+
+  #entrada.home > #sem-perfil.cartao input:not([type="file"]),
+  #entrada.home > #rapida.cartao input:not([type="file"]) {
+    width: min(24rem, 100%);
+  }
+
+  #entrada.home > #sem-perfil.cartao .btn.grande,
+  #entrada.home > #rapida.cartao .btn.grande {
+    min-width: min(24rem, 100%);
+    justify-content: center;
+  }
+
+  #entrada.home > .painel-home {
+    width: min(48rem, 100%);
+    gap: 1.15rem;
+  }
+
+  .painel-home .bloco.linha {
+    column-gap: .8rem;
+    row-gap: .8rem;
+  }
+
+  .sala-fixa {
+    padding: 1rem 1.2rem;
+  }
 }
 
 /* GIFs no chat: remove o fundo iluminado do balão, mantendo o GIF limpo */
@@ -404,7 +676,6 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   box-shadow: none !important;
   padding: 0;
 }
-
 /* ---------- seletor de avatares ---------- */
 .avatar-preview {
   display: flex;
