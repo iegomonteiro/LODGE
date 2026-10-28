@@ -356,7 +356,7 @@ wss.on("connection", (ws) => {
         try {
           const u = new URL(msg.gif.url);
           if (u.protocol === "https:" && /^media\d*\.giphy\.com$/.test(u.hostname) &&
-              /^\/media\/[A-Za-z0-9]+\/[A-Za-z0-9_-]+\.gif$/.test(u.pathname)) {
+              /^\/media\/[A-Za-z0-9]+(?:\/[A-Za-z0-9_-]+)*\.gif$/.test(u.pathname)) {
             gif = {
               url: u.href,
               title: limpaTexto(msg.gif.title, 120) || "GIF",
