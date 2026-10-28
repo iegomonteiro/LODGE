@@ -935,6 +935,16 @@ function mostrarControlesReacao() {
 }
 
 quadro.addEventListener("click", (e) => {
+  // Em tela cheia no celular, tocar fora do seletor fecha os GIFs.
+  if (!gifPanel.hidden && !e.target.closest("#gif-panel")) {
+    gifPanel.hidden = true;
+    modoReacao = false;
+    gifBtn.setAttribute("aria-expanded", "false");
+    if (document.activeElement === gifSearch) gifSearch.blur();
+    campoChatFocado = false;
+    atualizarViewportChat();
+    programarOcultarControlesReacao();
+  }
   if (e.target.closest("#reagir, #sair-cheia, #gif-panel")) return;
   mostrarControlesReacao();
 });
