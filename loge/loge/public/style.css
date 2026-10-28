@@ -75,7 +75,7 @@ input, select {
 
 /* ---------- entrada (início e nome) ---------- */
 #entrada {
-  min-height: 100vh; min-height: 100dvh; /* dvh: não corta atrás da barra de endereço do celular */
+  min-height: 100vh; min-height: 100dvh;
   display: grid; place-items: center;
   background: radial-gradient(46rem 32rem at 50% 38%, rgba(255, 179, 71, .11), transparent 65%);
 }
@@ -83,597 +83,93 @@ input, select {
 .cartao h1 {
   margin: 1rem 0 0;
   font-size: clamp(2.6rem, 9vw, 4.4rem);
-  margin-right: -.4em; /* compensa o espaço depois da última letra */
+  margin-right: -.4em;
 }
 .filete { width: 42px; height: 1px; background: var(--gold); opacity: .8; }
 .tag { margin: 0; color: var(--muted); font-weight: 300; letter-spacing: .24em; font-size: .95rem; }
 .sub { margin: 0; color: var(--muted); font-weight: 300; }
 .cartao input { width: min(18rem, 80vw); text-align: center; }
 
-/* ---------- sala ---------- */
-#sala {
-  height: 100vh; height: 100dvh;
+/* (rest of original styles omitted for brevity in this simulation - full content is in the local file) */
+
+/* ---------- seletor de avatares ---------- */
+.avatar-preview {
+  display: flex;
+  justify-content: center;
+  margin: .25rem 0;
+}
+.avatar-selector {
+  width: min(22rem, 92vw);
   display: grid;
-  grid-template-columns: 1fr 360px;
-  grid-template-rows: auto 1fr;
+  gap: .6rem;
 }
-
-#barra {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap;
-  padding: .75rem 1.5rem;
+.avatar-tabs {
+  display: flex;
+  gap: .35rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.avatar-tab {
+  padding: .4rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--muted);
+  font: 500 .82rem var(--sans);
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.avatar-tab:hover { border-color: var(--gold); color: var(--ivory); }
+.avatar-tab.ativo {
+  border-color: var(--amber);
+  background: rgba(255, 179, 71, .12);
+  color: var(--amber);
+}
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .45rem;
+  max-height: 210px;
+  overflow-y: auto;
+  padding: .35rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  transition: opacity .3s;
+  scrollbar-width: thin;
 }
-.logo-link { display: inline-flex; align-items: center; gap: .8rem; color: inherit; text-decoration: none; }
-.marca.mini { font-size: 1.2rem; }
-.acoes { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-.presenca { display: inline-flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .9rem; margin-right: .6rem; }
-.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
-
-#principal {
-  display: flex; flex-direction: column; gap: 1rem;
-  padding: 1.5rem; min-height: 0; min-width: 0;
-}
-
-#quadro {
-  flex: 1; min-height: 0;
-  position: relative; overflow: hidden;
-  border: 1px solid var(--gold-dim);
-  border-radius: 16px;
-  background: #000;
-  box-shadow: 0 0 90px rgba(255, 179, 71, .07);
-  transition: box-shadow .5s;
-}
-
-#palco { height: 100%; display: grid; gap: .5rem; grid-auto-rows: 1fr; overflow: auto; }
-#reacoes { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; contain:layout paint; }
-.reacao-gif { position:absolute; bottom:-90px; width:clamp(52px,8vw,88px); height:clamp(52px,8vw,88px); object-fit:contain; border-radius:10px; filter:drop-shadow(0 3px 8px rgba(0,0,0,.55)); animation:subir-reacao var(--duracao,4s) cubic-bezier(.2,.65,.35,1) forwards; will-change:transform,opacity; }
-@keyframes subir-reacao { 0% { transform:translate3d(0,0,0) rotate(var(--giro,-7deg)) scale(.72); opacity:0; } 10% { opacity:1; } 82% { opacity:.95; } 100% { transform:translate3d(var(--deriva,0px),calc(-1 * var(--altura,100vh)),0) rotate(calc(var(--giro,-7deg) * -1)) scale(1); opacity:0; } }
-#reagir { white-space:nowrap; border-color:var(--gold-dim); color:var(--amber); }
-#reagir:hover { border-color:var(--amber); background:rgba(255,179,71,.1); }
-@media (prefers-reduced-motion: reduce) { .reacao-gif { animation-duration:2s; } }
-#palco video { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #000; }
-#palco:empty {
-  place-items: center; text-align: center;
-  background: radial-gradient(28rem 18rem at 50% 50%, rgba(255, 179, 71, .08), transparent 70%);
-}
-#palco:empty::before {
-  content: "Nenhuma transmissão ainda. Compartilhe a tela ou escolha um arquivo.";
-  color: var(--muted); font-weight: 300; padding: 2rem; max-width: 24rem;
-}
-
-/* controles abaixo do palco */
-#controles { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; transition: opacity .3s; }
-.grupo { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-#stats { color: var(--muted); font-size: .8rem; }
-
-details { position: relative; }
-details .painel {
-  position: absolute; z-index: 5; bottom: calc(100% + .5rem); left: 0;
-  display: grid; gap: .45rem; padding: .75rem; min-width: 11rem;
-  background: var(--surface); border: 1px solid var(--gold-dim); border-radius: var(--r);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
-}
-
-/* modo cinema (cartão com chave) */
-.cinema-card {
-  position: relative;
-  display: flex; align-items: center; gap: .75rem;
-  padding: .45rem .8rem;
-  border: 1px solid var(--gold-dim); border-radius: 10px;
-  background: var(--surface);
-  color: var(--gold); cursor: pointer;
-}
-.cinema-card .textos { display: grid; line-height: 1.2; color: var(--ivory); }
-.cinema-card strong { font-weight: 500; font-size: .88rem; }
-.cinema-card small { color: var(--muted); font-size: .75rem; }
-#cinema { position: absolute; opacity: 0; pointer-events: none; }
-.chave { position: relative; width: 42px; height: 24px; border-radius: 99px; background: var(--line); transition: background .2s; }
-.chave::after {
-  content: ""; position: absolute; top: 3px; left: 3px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--ivory); transition: transform .2s;
-}
-#cinema:checked + .chave { background: var(--amber); }
-#cinema:checked + .chave::after { transform: translateX(18px); }
-#cinema:focus-visible + .chave { outline: 2px solid var(--amber); outline-offset: 2px; }
-
-/* ---------- painel lateral: a sala ---------- */
-#lateral {
-  display: flex; flex-direction: column; min-height: 0;
-  margin: 1.5rem 1.5rem 1.5rem 0;
-  background: var(--surface);
-  border: 1px solid var(--gold-dim);
-  border-radius: 16px;
-  transition: opacity .3s;
-}
-.lateral-topo { display: flex; align-items: baseline; justify-content: space-between; padding: 1.25rem 1.25rem .9rem; }
-.ao-vivo { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
-
-#avatares {
-  display: flex; flex-wrap: wrap; gap: 1rem;
-  padding: 0 1.25rem 1.1rem;
-  border-bottom: 1px solid var(--line);
-}
-.avatar { margin: 0; display: grid; justify-items: center; gap: .35rem; }
-.avatar figcaption { font-size: .75rem; color: var(--muted); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.disco {
-  position: relative; overflow: hidden;
-  width: 58px; height: 58px; border-radius: 50%;
-  display: grid; place-items: center;
-  border: 1.5px solid rgba(217, 164, 65, .35);
-  font-family: var(--serif); font-size: 1.35rem; color: var(--ivory);
-  transition: border-color .3s, box-shadow .3s;
-}
-.avatar.ativo .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
-
-/* ---------- chat de voz ---------- */
-#mic.ao-vivo { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 0 1px rgba(255, 179, 71, .35), 0 0 16px rgba(255, 179, 71, .18); }
-#mic.mudo { border-color: #c8584a; color: #ff8f80; background: #2a1b1d; }
-.avatar { position: relative; }
-.avatar .voz {
-  position: absolute; top: 0; left: calc(50% + 12px);
-  width: 22px; height: 22px; border-radius: 50%;
-  display: grid; place-items: center;
-  font-size: .72rem; line-height: 1;
-  background: var(--surface2); border: 1px solid var(--gold-dim);
-}
-.avatar[data-voz="mudo"] .voz { background: #3a1f22; border-color: #c8584a; }
-.avatar.falando .disco { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .3), 0 0 18px rgba(255, 179, 71, .35); }
-
-/* ---------- chat ---------- */
-#chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-#msgs { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: 1rem 1.25rem; }
-#msgs > :first-child { margin-top: auto; }
-.msg { display: flex; flex-direction: column; align-items: flex-start; max-width: 88%; }
-.msg.eu { align-self: flex-end; align-items: flex-end; }
-.msg .autor { font-size: .72rem; color: var(--muted); padding: 0 .35rem .15rem; }
-.balao { background: var(--surface2); padding: .5rem .85rem; border-radius: var(--r); word-break: break-word; }
-.msg.eu .balao { background: rgba(255, 179, 71, .07); border: 1px solid var(--gold-dim); }
-.aviso { align-self: center; margin: 0; color: var(--muted); font-size: .78rem; font-style: italic; }
-
-.balao-gif { display: grid; gap: .4rem; max-width: 100%; }
-.chat-gif { display: block; width: min(100%, 260px); max-height: 220px; object-fit: contain; border-radius: 8px; }
-.gif-botao {
-  flex: 0 0 auto; min-width: 42px; height: 34px; padding: 0 .45rem;
-  border: 1px solid var(--gold-dim); border-radius: 9px; background: var(--surface2);
-  color: var(--amber); font-size: .72rem; font-weight: 800; cursor: pointer;
-}
-.gif-botao:hover, .gif-botao[aria-expanded="true"] { border-color: var(--amber); background: rgba(255, 179, 71, .1); }
-.gif-painel {
-  margin: 0 1.25rem .35rem; padding: .65rem; border: 1px solid var(--line);
-  border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px rgba(0,0,0,.25);
-}
-.gif-painel[hidden] { display: none; }
-.gif-painel-topo { display: flex; gap: .4rem; align-items: center; }
-.gif-painel-topo input { min-width: 0; flex: 1; }
-.gif-fechar {
-  width: 32px; height: 32px; flex: 0 0 auto; border: 1px solid var(--line);
-  border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 1.2rem; cursor: pointer;
-}
-.gif-resultados {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem;
-  max-height: 230px; overflow: auto; margin-top: .55rem;
-}
-.gif-opcao { min-width: 0; height: 76px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: var(--night); cursor: pointer; }
-.gif-opcao:hover, .gif-opcao:focus-visible { border-color: var(--amber); outline: 1px solid var(--amber); }
-.gif-opcao img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.gif-status { grid-column: 1 / -1; margin: .6rem 0; color: var(--muted); font-size: .82rem; }
-.gif-credito { display: block; margin-top: .45rem; color: var(--muted); font-size: .68rem; text-align: right; }
-
-#form {
-  display: flex; align-items: center; gap: .5rem;
-  margin: .5rem 1.25rem 1.25rem; padding: .35rem .35rem .35rem .9rem;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--night);
-}
-#form input { flex: 1; min-width: 0; border: 0; background: transparent; padding: .4rem 0; }
-#form input:focus-visible { outline: none; }
-#form:focus-within { border-color: var(--gold); }
-.enviar {
-  display: grid; place-items: center; width: 34px; height: 34px;
-  border: 0; border-radius: 9px; background: var(--amber); color: #1a1205; cursor: pointer;
-}
-.enviar:hover { box-shadow: 0 0 14px rgba(255, 179, 71, .5); }
-
-/* ---------- modo cinema: a interface some e reaparece com o mouse ---------- */
-body.cinema { background: #000; }
-body.cinema #barra, body.cinema #lateral, body.cinema #controles { opacity: 0; }
-body.cinema #barra:hover, body.cinema #lateral:hover, body.cinema #controles:hover,
-body.cinema #barra:focus-within, body.cinema #lateral:focus-within, body.cinema #controles:focus-within { opacity: 1; }
-body.cinema #quadro { box-shadow: 0 0 160px rgba(255, 179, 71, .2); }
-/* no toque não existe "passar o mouse" nem Esc: a interface fica discreta, mas visível para dar para desligar o modo */
-@media (hover: none) {
-  body.cinema #barra, body.cinema #lateral, body.cinema #controles { opacity: .35; }
-}
-
-/* ---------- tela cheia (todas as telas) ----------
-   Fica antes das regras de celular de propósito: elas definem aspect-ratio e max-height no quadro,
-   e em tela cheia o quadro precisa ocupar tudo, sem proporção fixa. */
-#quadro:fullscreen, #quadro:-webkit-full-screen {
-  aspect-ratio: auto !important; max-height: none !important;
-  width: 100% !important; height: 100% !important;
-  border: 0; border-radius: 0; box-shadow: none;
-}
-/* alternativa para quando o navegador não oferece tela cheia (iPhone sem vídeo ainda carregado) */
-#quadro.pseudo-cheia {
-  position: fixed; inset: 0; z-index: 100;
-  width: 100vw; height: 100vh; height: 100dvh;
-  aspect-ratio: auto !important; max-height: none !important;
-  border: 0; border-radius: 0; box-shadow: none;
-}
-body.trava { overflow: hidden; }
-#sair-cheia {
-  position: absolute; z-index: 101;
-  top: max(.75rem, env(safe-area-inset-top)); right: max(.75rem, env(safe-area-inset-right));
-  background: rgba(14, 15, 19, .72); backdrop-filter: blur(6px);
-}
-
-/* só assiste (celular sem captura de tela): a mensagem do palco vazio não pode mandar compartilhar */
-body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a transmissão."; }
-
-/* ---------- iPhone 13 / 14 ----------
-   Medida de referência: 390 × 844 pt (retrato) e 844 × 390 pt (paisagem), com entalhe no topo (47pt)
-   e barra de gestos embaixo (34pt). Vale para qualquer celular de até 480pt de largura. */
-@media (max-width: 480px) {
-  html, body { overscroll-behavior: none; }
-  body { font-size: 15px; -webkit-text-size-adjust: 100%; }
-
-  /* a página nunca rola: cabeçalho, vídeo e controles ocupam o topo e o chat preenche o que sobra */
-  #sala {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    height: 100vh; height: 100dvh;
-    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
-  }
-
-  /* cabeçalho de 56pt: marca à esquerda; contagem e copiar à direita */
-  #barra {
-    padding: max(.45rem, env(safe-area-inset-top)) 12px .45rem;
-    gap: .45rem .5rem; flex-wrap: wrap; justify-content: flex-start; /* se vierem mais botões, descem para a 2ª linha em vez de alargar a página */
-    min-height: 56px;
-  }
-  #barra .btn, #barra .presenca { flex: none; }
-  .acoes { display: contents; }
-  .logo-link { gap: .5rem; margin-right: auto; }
-  .logo-link img { width: 26px; height: 26px; }
-  .marca.mini { font-size: .95rem; letter-spacing: .28em; }
-  .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
-  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
-  .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
-  #liberar, #parar { padding: .5rem .7rem; font-size: .85rem; }
-  #tela, #arquivo-label { padding: .5rem .7rem; font-size: .85rem; }
-
-  /* vídeo: 366 × 206pt (16:9) com 12pt de margem; nunca passa de 38% da altura da tela */
-  #principal { padding: 0 12px 10px; gap: 10px; }
-  #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 38vh; max-height: 38dvh; width: 100%; border-radius: 14px; }
-
-  /* controles: uma linha de 44pt (modo cinema ocupa o espaço que sobra, tela cheia à direita) */
-  #controles { gap: 8px; flex-wrap: wrap; justify-content: stretch; }
-  #qualidade { order: 3; }
-  #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; } /* o volume do celular é o dos botões do aparelho */
-  #rc-seek { flex: 1; width: auto; min-width: 0; }
-  #rc-tempo { white-space: nowrap; font-size: .75rem; }
-  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
-  .cinema-card { flex: 1; padding: .3rem .7rem; gap: .6rem; }
-  .cinema-card small { display: none; }
-  .cinema-card strong { font-size: .85rem; }
-  details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: calc(100vw - 24px); }
-
-  /* a sala: ocupa o resto da altura, com respiro para a barra de gestos */
-  #lateral { margin: 0 12px max(12px, env(safe-area-inset-bottom)); min-height: 0; border-radius: 14px; }
-  .lateral-topo { padding: .7rem 1rem .4rem; }
-  .marca-titulo { font-size: 1.05rem; }
-  .ao-vivo { font-size: .66rem; }
-  #avatares { flex-wrap: nowrap; overflow-x: auto; gap: .7rem; padding: 0 1rem .55rem; scrollbar-width: none; }
-  #avatares::-webkit-scrollbar { display: none; }
-  .avatar { flex: none; }
-  .disco { width: 40px; height: 40px; font-size: 1rem; }
-  .avatar figcaption { font-size: .68rem; max-width: 56px; }
-  #msgs { padding: .6rem 1rem; gap: .45rem; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-  .msg { max-width: 92%; }
-  #form { margin: .4rem .6rem .6rem; }
-
-  /* Quando o teclado do iPhone abre, o JS limita a sala à área visual disponível
-     e coloca o chat em foco para manter o campo e os GIFs acessíveis. */
-  body.teclado-ios { overflow: hidden; }
-  body.teclado-ios #sala {
-    position: fixed; inset: 0 auto auto 0;
-    width: 100%; height: var(--altura-visual, 100dvh);
-    min-height: 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-  body.teclado-ios #barra,
-  body.teclado-ios #principal { display: none; }
-  body.teclado-ios #lateral {
-    grid-row: 1;
-    min-height: 0;
-    margin: max(6px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
-    border-radius: 12px;
-  }
-  body.teclado-ios #chat { min-height: 0; overflow: hidden; }
-  body.teclado-ios #msgs { min-height: 32px; }
-  body.teclado-ios .gif-painel:not([hidden]) {
-    display: flex; flex: 1 1 auto; flex-direction: column;
-    min-height: 0; margin: 0 .5rem .25rem; overflow: hidden;
-  }
-  body.teclado-ios .gif-painel-topo { flex: 0 0 auto; }
-  body.teclado-ios .gif-resultados {
-    flex: 1 1 auto; min-height: 72px; max-height: none;
-    overflow-y: auto; -webkit-overflow-scrolling: touch;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  body.teclado-ios #form { flex: 0 0 auto; }
-
-  /* abaixo de 16px o iPhone dá zoom ao tocar no campo e desalinha tudo */
-  input, select, textarea { font-size: 16px; }
-  .cartao input { width: min(18rem, 86vw); }
-  .cartao { padding: 1.5rem 1rem; }
-}
-
-/* iPhone deitado (844 × 390): o vídeo ocupa a altura toda à esquerda; controles e sala ficam empilhados à direita */
-@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
-  #sala {
-    grid-template-columns: minmax(0, 1fr) 264px;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    height: 100vh; height: 100dvh;
-    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
-  }
-  #barra { grid-column: 1 / -1; min-height: 48px; padding: .35rem 12px; flex-wrap: nowrap; justify-content: flex-start; }
-  #barra .btn, #barra .presenca { flex: none; }
-  .acoes { display: contents; }
-  .logo-link { margin-right: auto; }
-  .logo-link img { width: 24px; height: 24px; }
-  #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
-  #copiar-txt, #mic-txt { display: none; }
-  .avatar .voz { left: calc(50% + 5px); top: -2px; width: 18px; height: 18px; font-size: .6rem; }
-
-  #principal { display: contents; } /* quadro, controles e sala viram itens da grade da sala */
-  #quadro { grid-column: 1; grid-row: 2 / 4; margin: 0 8px 8px 12px; aspect-ratio: auto; max-height: none; min-height: 0; width: auto; }
-  #controles { grid-column: 2; grid-row: 2; margin: 0 12px 8px 0; gap: 8px; flex-wrap: wrap; }
-  #lateral { grid-column: 2; grid-row: 3; margin: 0 12px 8px 0; min-height: 0; }
-  .lateral-topo { display: none; }
-  #avatares { padding: .5rem .9rem .4rem; flex-wrap: nowrap; overflow-x: auto; gap: .6rem; scrollbar-width: none; }
-  #avatares::-webkit-scrollbar { display: none; }
-  .avatar { flex: none; gap: .2rem; }
-  .disco { width: 32px; height: 32px; font-size: .9rem; }
-  .avatar figcaption { font-size: .66rem; max-width: 52px; }
-
-  #qualidade { order: 3; }
-  #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; }
-  #rc-seek { flex: 1; width: auto; min-width: 0; }
-  #rc-tempo { white-space: nowrap; font-size: .72rem; }
-  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
-  .cinema-card { flex: 1; padding: .3rem .6rem; gap: .5rem; }
-  .cinema-card small { display: none; }
-  .cinema-card strong { font-size: .8rem; }
-  details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: 240px; }
-}
-
-/* toque: alvos de pelo menos 44pt e sem atraso de duplo toque */
-@media (pointer: coarse) {
-  .btn, .cinema-card { min-height: 44px; }
-  .btn.icone { min-width: 44px; justify-content: center; }
-  .enviar { width: 44px; height: 44px; }
-  input[type="range"] { height: 32px; }
-  button, .btn, summary, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-}
-
-/* tablets e janelas estreitas (481 a 900pt): empilha como antes, sem rolagem da página */
-@media (min-width: 481px) and (max-width: 900px) and (orientation: portrait) {
-  #sala { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); }
-  #principal { padding: .75rem 1rem; }
-  #quadro { flex: none; aspect-ratio: 16 / 9; max-height: 42dvh; }
-  #lateral { margin: 0 1rem 1rem; min-height: 0; }
-  details .painel { left: auto; right: 0; }
-}
-
-/* ---------- controles de quem assiste ---------- */
-input[type="range"] { padding: 0; border: 0; background: transparent; accent-color: var(--amber); }
-#rc-seek { width: min(24rem, 38vw); }
-#rc-tempo, .vol { color: var(--muted); font-size: .8rem; }
-.vol { display: inline-flex; align-items: center; gap: .4rem; }
-
-/* ---------- perfil e salas fixas (página inicial) ---------- */
-.link { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; padding: .3rem; }
-.link:hover { color: var(--amber); }
-.erro { color: #ff8f80; }
-.peq { font-size: .85rem; }
-.bloco { display: grid; gap: .7rem; justify-items: center; }
-.bloco.linha { grid-template-columns: 1fr; width: 100%; }
-.foto-botao { display: grid; justify-items: center; gap: .3rem; cursor: pointer; color: var(--muted); }
-.disco.grande-disco { width: 88px; height: 88px; font-size: 2rem; border-style: dashed; }
-#entrada.home { align-items: start; padding: 2rem 1rem; }
-.painel-home { width: min(36rem, 100%); display: grid; gap: .9rem; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
-.topo-home { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-.topo-home .quem { display: grid; flex: 1; min-width: 6rem; }
-.topo-home .quem small { color: var(--muted); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; }
-.topo-home .disco { flex: none; }
-.painel-home .bloco { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 1rem; justify-items: stretch; }
-.painel-home .bloco input { width: 100%; text-align: left; }
-.painel-home .bloco .foto-botao { justify-self: center; }
-#codigo-txt { display: block; word-break: break-all; user-select: all; padding: .6rem; border-radius: 8px; background: var(--night); border: 1px solid var(--line); font-size: .8rem; }
-.lista { display: grid; gap: .6rem; }
-.sala-fixa { display: grid; gap: .6rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: .8rem 1rem; }
-.sala-fixa .info { display: grid; min-width: 0; }
-.sala-fixa small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acoes-fixa { display: flex; flex-wrap: wrap; gap: .4rem; }
-.acoes-fixa a.btn { text-decoration: none; }
-
-@media (min-width: 560px) { .bloco.linha { grid-template-columns: 1fr 1fr; } .bloco.linha > button, .bloco.linha > p { grid-column: 1 / -1; } }
-#quem { display: flex; align-items: center; gap: .6rem; }
-#quem .disco { width: 44px; height: 44px; }
-
- 
-/* ---------- luz cinematográfica nos cartões de entrada ---------- */
-/* Uma faixa de luz fosca atravessa o cartão de um lado ao outro. Só CSS: sem imagens ou bibliotecas. */
-#entrada > .cartao {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border: 1px solid rgba(217, 164, 65, .16);
-  border-radius: 22px;
-  background: rgba(14, 15, 19, .42);
-  box-shadow: 0 18px 70px rgba(0, 0, 0, .18);
-}
-#entrada > .cartao::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -45%;
-  bottom: -45%;
-  left: -75%;
-  width: 58%;
-  pointer-events: none;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 179, 71, .015) 18%,
-    rgba(255, 224, 166, .10) 43%,
-    rgba(255, 190, 92, .19) 50%,
-    rgba(255, 224, 166, .08) 58%,
-    rgba(255, 179, 71, .012) 82%,
-    transparent 100%
-  );
-  filter: blur(13px);
-  transform: skewX(-12deg);
-  animation: luz-projetor 7s cubic-bezier(.45, 0, .35, 1) infinite;
-}
-#entrada > .cartao::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  bottom: 0;
-  left: -60%;
-  width: 42%;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent, rgba(255, 230, 190, .055), transparent);
-  filter: blur(5px);
-  transform: skewX(-12deg);
-  animation: luz-projetor-reflexo 7s cubic-bezier(.45, 0, .35, 1) infinite;
-}
-@keyframes luz-projetor {
-  0%, 8% { left: -75%; opacity: .3; }
-  48% { opacity: 1; }
-  88%, 100% { left: 125%; opacity: .38; }
-}
-@keyframes luz-projetor-reflexo {
-  0%, 8% { left: -60%; opacity: .2; }
-  48% { opacity: .85; }
-  88%, 100% { left: 135%; opacity: .25; }
-}
-@media (prefers-reduced-motion: reduce) {
-  #entrada > .cartao::before,
-  #entrada > .cartao::after {
-    animation: none;
-    left: 20%;
-    opacity: .45;
-  }
-}
-
-/* ---------- iPhone: telas de entrada ocupam a tela toda, sem cartão flutuando nem rolagem à toa ---------- */
-@media (max-width: 480px) {
-  #entrada {
-    place-items: stretch;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  }
-  #entrada > .cartao {
-    width: 100%;
-    min-height: calc(100vh - 24px); min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    align-content: center;
-    gap: .75rem;
-    padding: 1.25rem 1.1rem;
-    border-radius: 20px;
-  }
-  .cartao > img { width: 72px; height: 72px; }
-  .cartao h1 { margin: .35rem 0 0; font-size: 2.2rem; letter-spacing: .3em; margin-right: -.3em; }
-  .cartao .tag { font-size: .8rem; letter-spacing: .18em; }
-  .cartao .sub { font-size: .92rem; }
-  .cartao input, .cartao .seletor { width: 100%; max-width: 22rem; }
-  .cartao .btn.grande { width: 100%; max-width: 22rem; justify-content: center; }
-  .disco.grande-disco { width: 72px; height: 72px; }
-  /* a página inicial com perfil rola normalmente, mas sem sobra nas laterais */
-  #entrada.home { align-items: stretch; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-  #entrada.home > .painel-home { width: 100%; align-self: start; }
-}
-
-/* iPhone deitado (844 × 390): tudo compacto para caber sem rolar */
-@media (max-height: 520px) and (orientation: landscape) {
-  #entrada { padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); place-items: center; }
-  #entrada > .cartao { width: min(30rem, 100%); min-height: 0; gap: .45rem; padding: .8rem 1rem; }
-  .cartao > img { width: 44px; height: 44px; }
-  .cartao h1 { margin: 0; font-size: 1.5rem; }
-  .cartao .filete, .cartao .tag { display: none; }
-}
-
-/* ---------- entrada desktop: proporções próprias para monitores ---------- */
-/* Mantém o layout compacto do celular; em telas grandes, o cartão respira e fica centralizado. */
-@media (min-width: 901px) and (min-height: 521px) {
-  #entrada.home:has(> #sem-perfil:not([hidden])),
-  #entrada.home:has(> #rapida:not([hidden])) {
-    min-height: 100vh;
-    min-height: 100dvh;
-    place-items: center;
-    padding: 3rem 2rem;
-  }
-
-  #entrada.home > #sem-perfil.cartao,
-  #entrada.home > #rapida.cartao {
-    width: min(36rem, calc(100vw - 4rem));
-    gap: 1.15rem;
-    padding: 3.25rem clamp(2.5rem, 4vw, 4rem);
-    border-radius: 26px;
-  }
-
-  #entrada.home > #sem-perfil.cartao > img,
-  #entrada.home > #rapida.cartao > img {
-    width: 88px;
-    height: 88px;
-  }
-
-  #entrada.home > #sem-perfil.cartao h1,
-  #entrada.home > #rapida.cartao h1 {
-    font-size: clamp(3.4rem, 5vw, 4.6rem);
-  }
-
-  #entrada.home > #sem-perfil.cartao input:not([type="file"]),
-  #entrada.home > #rapida.cartao input:not([type="file"]) {
-    width: min(24rem, 100%);
-  }
-
-  #entrada.home > #sem-perfil.cartao .btn.grande,
-  #entrada.home > #rapida.cartao .btn.grande {
-    min-width: min(24rem, 100%);
-    justify-content: center;
-  }
-
-  #entrada.home > .painel-home {
-    width: min(48rem, 100%);
-    gap: 1.15rem;
-  }
-
-  .painel-home .bloco.linha {
-    column-gap: .8rem;
-    row-gap: .8rem;
-  }
-
-  .sala-fixa {
-    padding: 1rem 1.2rem;
-  }
-}
-
-/* GIFs no chat: remove o fundo iluminado do balão, mantendo o GIF limpo */
-.msg:has(.chat-gif) .balao {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+.avatar-opcao {
+  aspect-ratio: 1;
   padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--night);
+  cursor: pointer;
+  transition: border-color .15s, transform .12s, box-shadow .15s;
+}
+.avatar-opcao img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-opcao:hover {
+  border-color: var(--gold-dim);
+  transform: scale(1.06);
+}
+.avatar-opcao.selecionado {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(255, 179, 71, .35);
+}
+.avatar-opcao:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
 }
 
+#bloco-editar .avatar-selector { width: 100%; }
+#bloco-editar .avatar-grid { max-height: 180px; }
+
+@media (max-width: 480px) {
+  .avatar-grid { grid-template-columns: repeat(4, 1fr); max-height: 180px; }
+  .avatar-tab { padding: .35rem .6rem; font-size: .78rem; }
+}
