@@ -229,6 +229,35 @@ details .painel {
 .msg.eu .balao { background: rgba(255, 179, 71, .07); border: 1px solid var(--gold-dim); }
 .aviso { align-self: center; margin: 0; color: var(--muted); font-size: .78rem; font-style: italic; }
 
+.balao-gif { display: grid; gap: .4rem; max-width: 100%; }
+.chat-gif { display: block; width: min(100%, 260px); max-height: 220px; object-fit: contain; border-radius: 8px; }
+.gif-botao {
+  flex: 0 0 auto; min-width: 42px; height: 34px; padding: 0 .45rem;
+  border: 1px solid var(--gold-dim); border-radius: 9px; background: var(--surface2);
+  color: var(--amber); font-size: .72rem; font-weight: 800; cursor: pointer;
+}
+.gif-botao:hover, .gif-botao[aria-expanded="true"] { border-color: var(--amber); background: rgba(255, 179, 71, .1); }
+.gif-painel {
+  margin: 0 1.25rem .35rem; padding: .65rem; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px rgba(0,0,0,.25);
+}
+.gif-painel[hidden] { display: none; }
+.gif-painel-topo { display: flex; gap: .4rem; align-items: center; }
+.gif-painel-topo input { min-width: 0; flex: 1; }
+.gif-fechar {
+  width: 32px; height: 32px; flex: 0 0 auto; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 1.2rem; cursor: pointer;
+}
+.gif-resultados {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem;
+  max-height: 230px; overflow: auto; margin-top: .55rem;
+}
+.gif-opcao { min-width: 0; height: 76px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: var(--night); cursor: pointer; }
+.gif-opcao:hover, .gif-opcao:focus-visible { border-color: var(--amber); outline: 1px solid var(--amber); }
+.gif-opcao img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gif-status { grid-column: 1 / -1; margin: .6rem 0; color: var(--muted); font-size: .82rem; }
+.gif-credito { display: block; margin-top: .45rem; color: var(--muted); font-size: .68rem; text-align: right; }
+
 #form {
   display: flex; align-items: center; gap: .5rem;
   margin: .5rem 1.25rem 1.25rem; padding: .35rem .35rem .35rem .9rem;
