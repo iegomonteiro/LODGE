@@ -23,6 +23,15 @@
       <span class="filete"></span>
       <p class="tag">Seu camarote particular.</p>
       <p class="sub">Crie seu perfil: só nome e foto, sem senha.</p>
+      <div class="bloco busca-salas">
+        <h2 class="marca-titulo">Procurar salas</h2>
+        <p class="sub peq">Digite o nome da sala para encontrar salas públicas sem senha.</p>
+        <form class="form-busca-salas">
+          <input class="busca-nome" placeholder="Nome da sala" maxlength="80" autocomplete="off" aria-label="Nome da sala para buscar" required>
+          <button class="btn primario" type="submit">Buscar</button>
+        </form>
+        <div class="resultados-salas lista" aria-live="polite"></div>
+      </div>
       <label class="foto-botao" title="Escolher foto">
         <span id="novo-foto" class="disco grande-disco"></span>
         <small>Escolher foto</small>
@@ -63,6 +72,16 @@
         <p class="sub">Este código é a chave do seu perfil e das suas salas fixas. Guarde num lugar seguro: com ele você recupera tudo em outro aparelho ou se limpar os dados do navegador. <strong>Quem tiver o código vira você: não mostre a ninguém.</strong></p>
         <code id="codigo-txt"></code>
         <button id="copiar-codigo" class="btn">Copiar código</button>
+      </div>
+
+      <div class="bloco busca-salas">
+        <h2 class="marca-titulo">Procurar salas</h2>
+        <p class="sub peq">Digite o nome da sala para encontrar salas públicas sem senha.</p>
+        <form class="form-busca-salas">
+          <input class="busca-nome" placeholder="Nome da sala" maxlength="80" autocomplete="off" aria-label="Nome da sala para buscar" required>
+          <button class="btn primario" type="submit">Buscar</button>
+        </form>
+        <div class="resultados-salas lista" aria-live="polite"></div>
       </div>
 
       <h2 class="marca-titulo">Minhas salas fixas</h2>
