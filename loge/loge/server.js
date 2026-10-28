@@ -127,7 +127,13 @@ function donoOk(f, perfil) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-const fotoValida = (f) => (typeof f === "string" && f.length <= FOTO_MAX && FOTO_RE.test(f) ? f : null);
+const AVATAR_RE = /^\/avatars_loge\/avatars\/(historicas|cinema|monstros)\/foto_\d{2}\.png$/;
+const fotoValida = (f) => {
+  if (typeof f !== "string") return null;
+  if (AVATAR_RE.test(f)) return f;
+  if (f.length <= FOTO_MAX && FOTO_RE.test(f)) return f;
+  return null;
+};
 const limpaTexto = (s, max) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
 const publica = (f) => ({ slug: f.slug, nome: f.nome, comSenha: !!f.hash, criadaEm: f.criadaEm });
 
@@ -145,7 +151,7 @@ function lerJson(req, limite = 4096) {
     const partes = [];
     req.on("data", (c) => {
       n += c.length;
-      if (n > limite) { if (!grande) { grande = true; partes.length = 0; erro(new Error("grande")); } } // descarta o resto, mas deixa a resposta 413 sair
+      if (n > limite) { if (!grande) { grande = true; partes.length = 0; erro(new Error("grande")); } }
       else if (!grande) partes.push(c);
     });
     req.on("end", () => {
@@ -166,7 +172,7 @@ const api = (fn) => async (req, res) => {
   }
 };
 
-const criacoes = new Map(); // endereço -> horários das últimas criações
+const criacoes = new Map();
 function podeCriar(ip) {
   const agora = Date.now();
   const lista = (criacoes.get(ip) || []).filter((t) => agora - t < 3_600_000);
@@ -183,13 +189,11 @@ const acharDona = (req, res, b) => {
   return f;
 };
 
-// informações públicas: o link de uma sala fixa mostra o nome dela antes de entrar
 app.get("/api/sala/:slug", (req, res) => {
   const f = fixas.get(String(req.params.slug || "").toLowerCase());
   responder(res, 200, f ? { fixa: true, nome: f.nome, comSenha: !!f.hash } : { fixa: false });
 });
 
-// Busca pública por nome: só expõe salas fixas e nunca a senha ou os dados do dono.
 app.get("/api/buscar-salas", (req, res) => {
   const consulta = limpaTexto(req.query.q, 80)
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
@@ -237,11 +241,11 @@ app.post("/api/salas/:slug/editar", api(async (req, res, b) => {
     if (!nome) return responder(res, 400, { erro: "Dê um nome para a sala." });
     f.nome = nome;
   }
-  if (b.senha !== undefined) definirSenha(f, b.senha ? String(b.senha).slice(0, 64) : ""); // "" ou null remove a senha
+  if (b.senha !== undefined) definirSenha(f, b.senha ? String(b.senha).slice(0, 64) : "");
   try { salvarFixas(); }
   catch (e) { Object.assign(f, antes); console.error(e); return responder(res, 500, { erro: "Não consegui salvar." }); }
   const viva = rooms.get(f.slug);
-  if (viva?.fixa) aplicarSenha(viva); // vale já para quem tentar entrar agora
+  if (viva?.fixa) aplicarSenha(viva);
   responder(res, 200, publica(f));
 }));
 
@@ -252,7 +256,7 @@ app.post("/api/salas/:slug/excluir", api(async (req, res, b) => {
   try { salvarFixas(); }
   catch (e) { fixas.set(f.slug, f); console.error(e); return responder(res, 500, { erro: "Não consegui salvar." }); }
   const viva = rooms.get(f.slug);
-  if (viva?.fixa) { // quem estava dentro é avisado e desconectado
+  if (viva?.fixa) {
     rooms.delete(f.slug);
     for (const p of viva.values()) { send(p.ws, { type: "closed" }); p.ws.close(); }
   }
@@ -262,16 +266,13 @@ app.post("/api/salas/:slug/excluir", api(async (req, res, b) => {
 const server = createServer(app);
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
-const rooms = new Map(); // Map<sala, Map<peerId, { ws, name, foto, owner }>> + .salt/.hash (senha), .sharer (quem transmite), .fails/.lockedUntil/.expira, .fixa
-// Senha guardada como HMAC-SHA256 com sal aleatório por sala; comparação em tempo constante.
+const rooms = new Map();
 const digest = (salt, t) => createHmac("sha256", salt).update(String(t || "")).digest();
 const senhaOk = (room, t) => timingSafeEqual(digest(room.salt, t), room.hash);
-// Sala fixa: o dono é sempre o anfitrião quando está presente. Nas demais: quem está há mais tempo na sala.
 const hostId = (room) => {
   if (room.fixa) for (const [pid, p] of room) if (p.owner) return pid;
   return room.keys().next().value;
 };
-// (sala viva) senha e sal vêm do registro da sala fixa
 function aplicarSenha(room) {
   room.salt = Buffer.from(room.fixa.salt, "base64");
   room.hash = room.fixa.hash ? Buffer.from(room.fixa.hash, "base64") : null;
@@ -313,22 +314,21 @@ wss.on("connection", (ws) => {
         nova.lockedUntil = 0;
         if (fixa) {
           nova.fixa = fixa;
-          aplicarSenha(nova); // a senha vem do registro da sala fixa
+          aplicarSenha(nova);
         } else {
           nova.salt = randomBytes(16);
-          nova.hash = pw ? digest(nova.salt, pw) : null; // quem cria a sala define a senha (opcional)
+          nova.hash = pw ? digest(nova.salt, pw) : null;
         }
         rooms.set(rid, nova);
       }
       const room = rooms.get(rid);
-      const dono = !!(room.fixa && donoOk(room.fixa, msg.owner)); // o dono entra sem digitar a senha
+      const dono = !!(room.fixa && donoOk(room.fixa, msg.owner));
       if (room.hash && !dono) {
         if (room.lockedUntil > agora) {
           send(ws, { type: "locked" });
           return ws.close();
         }
         if (!senhaOk(room, pw)) {
-          // pedir a senha pela primeira vez (campo vazio) não conta como tentativa errada
           if (pw && ++room.fails >= MAX_FAILS) { room.lockedUntil = agora + LOCK_MS; room.fails = 0; }
           send(ws, { type: pw ? "wrong-password" : "need-password" });
           return ws.close();
@@ -349,7 +349,6 @@ wss.on("connection", (ws) => {
       const sala = room.fixa ? { fixa: true, nome: room.fixa.nome } : null;
       send(ws, { type: "joined", id, peers, host: hostId(room), sharer: room.sharer, sala });
       broadcast(room, { type: "peer-joined", id, name, foto, dono }, id);
-      // quando o dono chega a uma sala que já tem gente, ele assume o posto de anfitrião
       if (hostAntes && hostAntes !== hostId(room)) broadcast(room, { type: "host", id: hostId(room) }, id);
       return;
     }
@@ -382,7 +381,6 @@ wss.on("connection", (ws) => {
         broadcast(room, { type: "chat", from: id, name: room.get(id)?.name, text, gif });
     }
 
-    // Reações GIF pequenas que sobem sobre o vídeo; limite de 4 por conexão a cada 10 segundos.
     if (msg.type === "reaction") {
       if (++janela.reaction > 4) return;
       let gif = null;
@@ -398,7 +396,6 @@ wss.on("connection", (ws) => {
       if (gif) broadcast(room, { type: "reaction", from: id, name: room.get(id)?.name, gif });
     }
 
-    // Só uma pessoa transmite por vez
     if (msg.type === "share-start") {
       if (room.sharer && room.sharer !== id)
         return send(ws, { type: "share-denied", by: room.get(room.sharer)?.name });
@@ -410,14 +407,12 @@ wss.on("connection", (ws) => {
       room.sharer = null;
       broadcast(room, { type: "sharer", id: null });
     }
-    // O anfitrião pode liberar o palco
     if (msg.type === "release" && hostId(room) === id && room.sharer) {
       const alvo = room.get(room.sharer);
       room.sharer = null;
       if (alvo) send(alvo.ws, { type: "stop-share" });
       broadcast(room, { type: "sharer", id: null });
     }
-    // Controle do player (play, pause, posição): só repassa mensagens pequenas
     if (msg.type === "sync" && JSON.stringify(msg.data ?? null).length < 300)
       broadcast(room, { type: "sync", from: id, data: msg.data }, id);
   });
@@ -430,9 +425,8 @@ wss.on("connection", (ws) => {
     room.delete(id);
     if (eraSharer) room.sharer = null;
     if (room.size === 0) {
-      if (room.fixa) return; // sala fixa fica na memória (com a contagem de senhas erradas) até ser excluída
+      if (room.fixa) return;
       if (!room.hash) return rooms.delete(roomId);
-      // sala com senha: guarda a senha por um tempo, para o link não ficar aberto a quem recriar a sala
       const rid = roomId;
       clearTimeout(room.expira);
       room.expira = setTimeout(() => {
