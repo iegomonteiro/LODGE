@@ -742,6 +742,7 @@ $("gif-close").onclick = () => {
     campoChatFocado = $("texto") === document.activeElement;
     setTimeout(atualizarViewportChat, 80);
   }
+  programarOcultarControlesReacao();
 };
 gifSearch.addEventListener("input", () => {
   clearTimeout(buscaGifTimer);
@@ -799,6 +800,7 @@ function enviarReacao(gif) {
   modoReacao = false;
   gifBtn.setAttribute("aria-expanded", "false");
   gifSearch.placeholder = "Buscar GIFs...";
+  programarOcultarControlesReacao();
 }
 
 function mostrarReacao({ gif, name }) {
@@ -908,16 +910,21 @@ function restaurarControlesOriginais() {
   timerControlesReacao = null;
 }
 
+function programarOcultarControlesReacao() {
+  if (!telaPequenaToque() || !(cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) return;
+  if (timerControlesReacao) clearTimeout(timerControlesReacao);
+  timerControlesReacao = setTimeout(() => {
+    quadro.classList.remove("reacoes-visiveis");
+    timerControlesReacao = null;
+  }, 3200);
+}
+
 function mostrarControlesReacao() {
   if (!telaPequenaToque() || !(cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) return;
   quadro.classList.add("reacoes-visiveis");
   if (timerControlesReacao) clearTimeout(timerControlesReacao);
-  if (gifPanel.hidden) {
-    timerControlesReacao = setTimeout(() => {
-      quadro.classList.remove("reacoes-visiveis");
-      timerControlesReacao = null;
-    }, 3200);
-  }
+  timerControlesReacao = null;
+  if (gifPanel.hidden) programarOcultarControlesReacao();
 }
 
 quadro.addEventListener("click", (e) => {
@@ -969,7 +976,6 @@ reagirBtn.addEventListener("click", () => {
   }
 });
 
-gifPanel.addEventListener("transitionend", () => {});
 $("sair-cheia").onclick = sairCheia;
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement) sairCheia();
