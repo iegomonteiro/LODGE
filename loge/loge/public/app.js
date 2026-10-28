@@ -882,18 +882,55 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* Tela cheia. Três caminhos, do melhor para o pior:
-   1) navegador com tela cheia de elemento (computador, Android, iPad): o quadro inteiro;
-   2) iPhone: o Safari só aceita o <video> (player nativo, gira sozinho para a horizontal);
-   3) sem nada disso (ainda sem vídeo): "tela cheia falsa", o quadro cobre a janela inteira. */
+/* Tela cheia: mantém o quadro como elemento de tela cheia para que os controles
+   e as reações continuem por cima do vídeo, inclusive no celular. */
 const quadro = $("quadro");
 const cheiaNativa = () => document.fullscreenElement || document.webkitFullscreenElement;
+const reagirOrigem = reagirBtn.parentNode;
+const reagirProximo = reagirBtn.nextSibling;
+const gifPainelOrigem = gifPanel.parentNode;
+const gifPainelProximo = gifPanel.nextSibling;
+const telaPequenaToque = () => matchMedia("(max-width: 900px) and (pointer: coarse)").matches;
+let timerControlesReacao = null;
+
+function moverControlesParaQuadro() {
+  if (!telaPequenaToque()) return;
+  quadro.append(reagirBtn, gifPanel);
+  document.body.classList.add("tela-cheia-mobile");
+}
+
+function restaurarControlesOriginais() {
+  if (reagirBtn.parentNode !== reagirOrigem) reagirOrigem.insertBefore(reagirBtn, reagirProximo);
+  if (gifPanel.parentNode !== gifPainelOrigem) gifPainelOrigem.insertBefore(gifPanel, gifPainelProximo);
+  document.body.classList.remove("tela-cheia-mobile");
+  quadro.classList.remove("reacoes-visiveis");
+  if (timerControlesReacao) clearTimeout(timerControlesReacao);
+  timerControlesReacao = null;
+}
+
+function mostrarControlesReacao() {
+  if (!telaPequenaToque() || !(cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) return;
+  quadro.classList.add("reacoes-visiveis");
+  if (timerControlesReacao) clearTimeout(timerControlesReacao);
+  if (gifPanel.hidden) {
+    timerControlesReacao = setTimeout(() => {
+      quadro.classList.remove("reacoes-visiveis");
+      timerControlesReacao = null;
+    }, 3200);
+  }
+}
+
+quadro.addEventListener("click", (e) => {
+  if (e.target.closest("#reagir, #sair-cheia, #gif-panel")) return;
+  mostrarControlesReacao();
+});
 
 function sairCheia() {
   if (cheiaNativa()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
   quadro.classList.remove("pseudo-cheia");
   document.body.classList.remove("trava");
   $("sair-cheia").hidden = true;
+  restaurarControlesOriginais();
   try { screen.orientation?.unlock?.(); } catch {}
 }
 
@@ -901,6 +938,7 @@ function cheiaFalsa() {
   quadro.classList.add("pseudo-cheia");
   document.body.classList.add("trava");
   $("sair-cheia").hidden = false;
+  moverControlesParaQuadro();
 }
 
 $("tela-cheia").onclick = async () => {
@@ -910,22 +948,37 @@ $("tela-cheia").onclick = async () => {
   if (pedir) {
     try {
       await pedir.call(quadro);
-      $("sair-cheia").hidden = false; // o botão de sair fica dentro do quadro: o resto da página some em tela cheia
-      screen.orientation?.lock?.("landscape").catch(() => {}); // Android: deita a tela; iOS ignora
+      $("sair-cheia").hidden = false;
+      moverControlesParaQuadro();
+      if (telaPequenaToque()) {
+        try { await screen.orientation?.lock?.("landscape"); } catch { /* iOS/Safari pode não permitir travar a orientação */ }
+      }
       return;
-    } catch { /* recusou: tenta o próximo caminho */ }
+    } catch { /* usa o modo de tela cheia alternativo */ }
   }
 
-  const video = document.querySelector("#palco video");
-  if (video?.webkitEnterFullscreen) {
-    try { video.webkitEnterFullscreen(); return; } catch { /* sem metadados ainda */ }
-  }
+  // Não usamos o player nativo do iPhone: ele esconde os controles HTML sobre o vídeo.
   cheiaFalsa();
 };
 
+reagirBtn.addEventListener("click", () => {
+  if (telaPequenaToque() && (cheiaNativa() || quadro.classList.contains("pseudo-cheia"))) {
+    quadro.classList.add("reacoes-visiveis");
+    if (timerControlesReacao) clearTimeout(timerControlesReacao);
+    timerControlesReacao = null;
+  }
+});
+
+gifPanel.addEventListener("transitionend", () => {});
 $("sair-cheia").onclick = sairCheia;
-document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) sairCheia(); });
-document.addEventListener("webkitfullscreenchange", () => { if (!document.webkitFullscreenElement) sairCheia(); });
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) sairCheia();
+  else { moverControlesParaQuadro(); }
+});
+document.addEventListener("webkitfullscreenchange", () => {
+  if (!document.webkitFullscreenElement) sairCheia();
+  else { moverControlesParaQuadro(); }
+});
 
 $("copiar").onclick = async () => {
   try { await navigator.clipboard.writeText(location.href); }
