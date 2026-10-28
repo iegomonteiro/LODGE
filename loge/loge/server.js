@@ -189,6 +189,19 @@ app.get("/api/sala/:slug", (req, res) => {
   responder(res, 200, f ? { fixa: true, nome: f.nome, comSenha: !!f.hash } : { fixa: false });
 });
 
+// Busca pública por nome: só expõe salas fixas e nunca a senha ou os dados do dono.
+app.get("/api/buscar-salas", (req, res) => {
+  const consulta = limpaTexto(req.query.q, 80)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  if (!consulta) return responder(res, 200, { salas: [] });
+  const salas = [...fixas.values()]
+    .filter((f) => f.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").includes(consulta))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+    .slice(0, 30)
+    .map((f) => ({ slug: f.slug, nome: f.nome, comSenha: !!f.hash }));
+  responder(res, 200, { salas });
+});
+
 app.post("/api/salas", api(async (req, res, b) => {
   if (!perfilValido(b.perfil)) return responder(res, 401, { erro: "Perfil inválido." });
   const slug = String(b.slug || "").toLowerCase();
