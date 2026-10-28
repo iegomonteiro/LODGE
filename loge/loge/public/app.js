@@ -636,7 +636,7 @@ document.addEventListener("keydown", (e) => {
 });
 atualizarMic();
 
-/* ---------- chat ---------- */
+/* ---------- chat e GIFs ---------- */
 $("form").onsubmit = (e) => {
   e.preventDefault();
   const text = $("texto").value.trim();
@@ -645,7 +645,84 @@ $("form").onsubmit = (e) => {
   $("texto").value = "";
 };
 
-function mensagem({ from, name, text }) {
+const gifBtn = $("gif-btn");
+const gifPanel = $("gif-panel");
+const gifSearch = $("gif-search");
+const gifResults = $("gif-results");
+let buscaGifTimer = null;
+let buscaGifAtual = 0;
+
+gifBtn.onclick = () => {
+  const abrir = gifPanel.hidden;
+  gifPanel.hidden = !abrir;
+  gifBtn.setAttribute("aria-expanded", String(abrir));
+  if (abrir && !gifResults.childElementCount) buscarGifs("");
+  if (abrir) gifSearch.focus();
+};
+$("gif-close").onclick = () => {
+  gifPanel.hidden = true;
+  gifBtn.setAttribute("aria-expanded", "false");
+};
+gifSearch.addEventListener("input", () => {
+  clearTimeout(buscaGifTimer);
+  buscaGifTimer = setTimeout(() => buscarGifs(gifSearch.value.trim()), 300);
+});
+
+async function buscarGifs(q) {
+  const chamada = ++buscaGifAtual;
+  gifResults.replaceChildren();
+  const carregando = document.createElement("p");
+  carregando.className = "gif-status";
+  carregando.textContent = "Buscando GIFs…";
+  gifResults.append(carregando);
+  try {
+    const r = await fetch("/api/gifs?q=" + encodeURIComponent(q));
+    const dados = await r.json();
+    if (chamada !== buscaGifAtual) return;
+    if (!r.ok) throw new Error(dados.erro || "Não foi possível carregar GIFs.");
+    gifResults.replaceChildren();
+    if (!dados.gifs?.length) {
+      const vazio = document.createElement("p");
+      vazio.className = "gif-status";
+      vazio.textContent = "Nenhum GIF encontrado. Tente outra busca.";
+      gifResults.append(vazio);
+      return;
+    }
+    for (const gif of dados.gifs) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "gif-opcao";
+      item.title = gif.title || "Enviar GIF";
+      item.setAttribute("aria-label", "Enviar GIF: " + (gif.title || "GIF"));
+      const img = document.createElement("img");
+      img.src = gif.preview || gif.url;
+      img.alt = gif.alt || gif.title || "GIF";
+      img.loading = "lazy";
+      item.append(img);
+      item.addEventListener("click", () => enviarGif(gif));
+      gifResults.append(item);
+    }
+  } catch (err) {
+    if (chamada !== buscaGifAtual) return;
+    gifResults.replaceChildren();
+    const erro = document.createElement("p");
+    erro.className = "gif-status";
+    erro.textContent = err.message || "Erro ao buscar GIFs.";
+    gifResults.append(erro);
+  }
+}
+
+function enviarGif(gif) {
+  if (ws?.readyState !== 1) return aviso("Reconectando; tente enviar o GIF novamente.");
+  ws.send(JSON.stringify({
+    type: "chat",
+    gif: { url: gif.url, title: gif.title || "GIF", alt: gif.alt || gif.title || "GIF" }
+  }));
+  gifPanel.hidden = true;
+  gifBtn.setAttribute("aria-expanded", "false");
+}
+
+function mensagem({ from, name, text, gif }) {
   const eu = from === myId;
   const caixa = document.createElement("div");
   caixa.className = "msg" + (eu ? " eu" : "");
@@ -653,8 +730,21 @@ function mensagem({ from, name, text }) {
   autor.className = "autor";
   autor.textContent = eu ? "Você" : name;
   const balao = document.createElement("div");
-  balao.className = "balao";
-  balao.textContent = text; // textContent evita injeção de HTML
+  balao.className = "balao" + (gif ? " balao-gif" : "");
+  if (text) {
+    const conteudo = document.createElement("span");
+    conteudo.textContent = text; // textContent evita injeção de HTML
+    balao.append(conteudo);
+  }
+  if (gif?.url) {
+    const img = document.createElement("img");
+    img.className = "chat-gif";
+    img.src = gif.url;
+    img.alt = gif.alt || gif.title || "GIF enviado no chat";
+    img.loading = "lazy";
+    img.decoding = "async";
+    balao.append(img);
+  }
   caixa.append(autor, balao);
   $("msgs").append(caixa);
   $("msgs").scrollTop = $("msgs").scrollHeight;
