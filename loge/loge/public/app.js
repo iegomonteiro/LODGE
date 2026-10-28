@@ -14,9 +14,12 @@ let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 /* ---------- entrada e conexão ---------- */
 $("nome").value = localStorage.getItem("nome") || "";
-$("nome").onkeydown = (e) => e.key === "Enter" && $("entrar").click();
-
-$("senha").onkeydown = (e) => e.key === "Enter" && $("entrar").click();
+// Atenção: com `onkeydown = (e) => e.key === "Enter" && ...` toda tecla que não é Enter devolvia `false`,
+// e um handler `on...` que devolve false cancela a tecla: o campo ficava vazio e o nome virava "anônimo".
+// Por isso o Enter é tratado com addEventListener e sem retorno.
+const enterEntra = (e) => { if (e.key === "Enter") $("entrar").click(); };
+$("nome").addEventListener("keydown", enterEntra);
+$("senha").addEventListener("keydown", enterEntra);
 
 $("entrar").onclick = async () => {
   const nome = $("nome").value.trim() || "anônimo";
@@ -566,7 +569,7 @@ setInterval(async () => {
 }, 2000);
 
 /* ---------- palco único, anfitrião e controle do player ---------- */
-$("liberar").onclick = () => ws?.readyState === 1 && ws.send(JSON.stringify({ type: "release" }));
+$("liberar").onclick = () => { if (ws?.readyState === 1) ws.send(JSON.stringify({ type: "release" })); };
 
 function reservarPalco() {
   return new Promise((ok) => {
