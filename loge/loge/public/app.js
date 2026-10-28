@@ -801,25 +801,27 @@ function enviarReacao(gif) {
   gifSearch.placeholder = "Buscar GIFs...";
 }
 
-function mostrarReacao({ gif }) {
+function mostrarReacao({ gif, name }) {
   if (!gif?.url) return;
   const camada = $("reacoes");
-  if (!camada || camada.childElementCount >= 12) return;
+  if (!camada || camada.childElementCount >= 5) return;
+
+  const item = document.createElement("div");
+  item.className = "reacao-item";
+
   const img = document.createElement("img");
   img.className = "reacao-gif";
   img.src = gif.url;
-  img.alt = "";
-  img.setAttribute("aria-hidden", "true");
+  img.alt = gif.alt || "GIF de reação";
   img.draggable = false;
-  const largura = camada.clientWidth || 320;
-  const tamanho = Math.min(88, Math.max(52, largura * 0.1));
-  img.style.left = (Math.random() * Math.max(0, largura - tamanho)) + "px";
-  img.style.setProperty("--deriva", Math.round(Math.random() * 80 - 40) + "px");
-  img.style.setProperty("--giro", Math.round(Math.random() * 18 - 9) + "deg");
-  img.style.setProperty("--duracao", (3.5 + Math.random() * 1.5) + "s");
-  img.style.setProperty("--altura", (camada.clientHeight + tamanho + 100) + "px");
-  camada.append(img);
-  img.addEventListener("animationend", () => img.remove(), { once: true });
+
+  const autor = document.createElement("span");
+  autor.className = "reacao-autor";
+  autor.textContent = name || "Alguém";
+
+  item.append(img, autor);
+  camada.append(item);
+  item.addEventListener("animationend", () => item.remove(), { once: true });
 }
 
 function enviarGif(gif) {
