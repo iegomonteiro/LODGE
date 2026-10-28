@@ -22,30 +22,47 @@
       <h1 class="marca">Loge</h1>
       <span class="filete"></span>
       <p class="tag">Seu camarote particular.</p>
-      <p class="sub">Crie seu perfil: só nome e um avatar.</p>
 
-      <div class="avatar-preview">
-        <span id="novo-foto" class="disco grande-disco"></span>
-      </div>
-
-      <div class="avatar-selector">
-        <div class="avatar-tabs" role="tablist">
-          <button type="button" class="avatar-tab ativo" data-cat="historicas">Históricas</button>
-          <button type="button" class="avatar-tab" data-cat="cinema">Cinema</button>
-          <button type="button" class="avatar-tab" data-cat="monstros">Monstros</button>
+      <!-- passo 1: nome -->
+      <div id="passo-nome">
+        <p class="sub">Crie seu perfil: só nome e um avatar.</p>
+        <input id="novo-nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname">
+        <button id="ir-avatar" class="btn primario grande">Continuar</button>
+        <button id="so-rapida" class="link">Só quero uma sala rápida</button>
+        <button id="tenho-codigo" class="link">Já tenho um código de recuperação</button>
+        <div id="recuperar" hidden class="bloco">
+          <input id="codigo-in" placeholder="Cole o código aqui" autocomplete="off" spellcheck="false">
+          <button id="recuperar-ok" class="btn">Recuperar perfil</button>
         </div>
-        <div id="avatar-grid" class="avatar-grid"></div>
+        <p id="erro-perfil" class="sub erro" hidden></p>
       </div>
 
-      <input id="novo-nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname">
-      <button id="criar-perfil" class="btn primario grande">Criar perfil</button>
-      <button id="so-rapida" class="link">Só quero uma sala rápida</button>
-      <button id="tenho-codigo" class="link">Já tenho um código de recuperação</button>
-      <div id="recuperar" hidden class="bloco">
-        <input id="codigo-in" placeholder="Cole o código aqui" autocomplete="off" spellcheck="false">
-        <button id="recuperar-ok" class="btn">Recuperar perfil</button>
+      <!-- passo 2: escolha do avatar -->
+      <div id="passo-avatar" hidden>
+        <p class="sub">Escolha um avatar ou envie uma foto.</p>
+
+        <div class="avatar-preview">
+          <span id="novo-foto" class="disco grande-disco"></span>
+        </div>
+
+        <div class="avatar-selector">
+          <div class="avatar-tabs" role="tablist">
+            <button type="button" class="avatar-tab ativo" data-cat="historicas">Históricas</button>
+            <button type="button" class="avatar-tab" data-cat="cinema">Cinema</button>
+            <button type="button" class="avatar-tab" data-cat="monstros">Monstros</button>
+          </div>
+          <div id="avatar-grid" class="avatar-grid"></div>
+        </div>
+
+        <label class="foto-botao" style="margin-top:.6rem">
+          <small>Ou enviar minha foto</small>
+          <input id="novo-arquivo" type="file" accept="image/*" hidden>
+        </label>
+
+        <button id="criar-perfil" class="btn primario grande">Criar perfil</button>
+        <button id="voltar-nome" class="link">Voltar</button>
+        <p id="erro-avatar" class="sub erro" hidden></p>
       </div>
-      <p id="erro-perfil" class="sub erro" hidden></p>
     </section>
 
     <!-- 2) com perfil -->
@@ -70,6 +87,10 @@
           </div>
           <div id="avatar-grid-ed" class="avatar-grid"></div>
         </div>
+        <label class="foto-botao" style="margin-top:.5rem">
+          <small>Ou enviar outra foto</small>
+          <input id="ed-arquivo" type="file" accept="image/*" hidden>
+        </label>
         <input id="ed-nome" placeholder="Seu nome" maxlength="24">
         <button id="ed-salvar" class="btn primario">Salvar</button>
       </div>
