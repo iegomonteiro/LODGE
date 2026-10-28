@@ -129,12 +129,28 @@ input, select {
 }
 
 #palco { height: 100%; display: grid; gap: .5rem; grid-auto-rows: 1fr; overflow: auto; }
-#reacoes { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; contain:layout paint; }
-.reacao-gif { position:absolute; bottom:-90px; width:clamp(52px,8vw,88px); height:clamp(52px,8vw,88px); object-fit:contain; border-radius:10px; filter:drop-shadow(0 3px 8px rgba(0,0,0,.55)); animation:subir-reacao var(--duracao,4s) cubic-bezier(.2,.65,.35,1) forwards; will-change:transform,opacity; }
-@keyframes subir-reacao { 0% { transform:translate3d(0,0,0) rotate(var(--giro,-7deg)) scale(.72); opacity:0; } 10% { opacity:1; } 82% { opacity:.95; } 100% { transform:translate3d(var(--deriva,0px),calc(-1 * var(--altura,100vh)),0) rotate(calc(var(--giro,-7deg) * -1)) scale(1); opacity:0; } }
+#reacoes {
+  position:absolute; inset:0; z-index:4; display:flex; flex-direction:column;
+  align-items:flex-end; justify-content:flex-end; gap:.55rem; padding:1rem;
+  overflow:hidden; pointer-events:none; contain:layout paint;
+}
+.reacao-item {
+  display:flex; align-items:center; gap:.55rem; max-width:min(250px,80%);
+  padding:.4rem .65rem .4rem .4rem; border:1px solid rgba(255,255,255,.2);
+  border-radius:14px; background:rgba(12,12,15,.78); backdrop-filter:blur(8px);
+  box-shadow:0 4px 18px rgba(0,0,0,.35); animation:reacao-canto 3.8s ease-in-out both;
+  transform-origin:bottom right; will-change:transform,opacity;
+}
+.reacao-gif { display:block; flex:0 0 auto; width:clamp(48px,6vw,72px); height:clamp(48px,6vw,72px); object-fit:contain; border-radius:9px; }
+.reacao-autor { color:#fff; font-size:.82rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 1px 3px #000; }
+@keyframes reacao-canto {
+  0% { opacity:0; transform:translate(24px,10px) scale(.82); }
+  12%,78% { opacity:1; transform:translate(0,0) scale(1); }
+  100% { opacity:0; transform:translate(24px,10px) scale(.82); }
+}
 #reagir { white-space:nowrap; border-color:var(--gold-dim); color:var(--amber); }
 #reagir:hover { border-color:var(--amber); background:rgba(255,179,71,.1); }
-@media (prefers-reduced-motion: reduce) { .reacao-gif { animation-duration:2s; } }
+@media (prefers-reduced-motion: reduce) { .reacao-item { animation-duration:2s; } }
 #palco video { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #000; }
 #palco:empty {
   place-items: center; text-align: center;
