@@ -15,6 +15,7 @@ build step, a handful of files.
 - Adjustable resolution, fps, bitrate and codec (H.264, VP9, AV1, VP8)
 - Live stats (resolution, fps, Mbps, encoder)
 - Chat and voice chat (mic button, mute/unmute, M key)
+- GIF search and sharing in chat, powered by GIPHY
 - Cinema mode
 - Optional room password, one broadcaster at a time, host can free the stage
 - Nobody can pause the video, and the sound is always on (viewers can still seek a local-file broadcast)
@@ -57,13 +58,17 @@ bitrate × number of viewers.
 |---------------|---------|-------------------------------|
 | `PORT`        | 3000    | HTTP/WebSocket port           |
 | `MAX_PEERS`   | 8       | Maximum people per room       |
+| `GIPHY_API_KEY` | -- | GIPHY API key for GIF search in chat |
 | `DATA_DIR`    | `./data`| Where permanent rooms are saved |
 | `MAX_FIXED_ROOMS` | 200 | Permanent rooms on the whole server |
 | `TURN_URL`    | --      | Comma-separated TURN URLs     |
 | `TURN_SECRET` | --      | coturn `static-auth-secret`   |
 
 Set them in the shell, or copy `.env.example` to `.env` and run
-`node --env-file=.env server.js` (Node 20.6+).
+`node --env-file=.env server.js` (Node 20.6+). To enable GIFs, set
+`GIPHY_API_KEY` to your key. On a hosting service such as Render, add it as an
+environment variable in the service settings; never put the real key in GitHub
+or in browser JavaScript.
 
 ## Profiles and permanent rooms
 
