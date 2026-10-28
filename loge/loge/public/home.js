@@ -211,21 +211,16 @@ $("criar").onclick = () => criarSalaRapida($("senha-sala"));
 const slugDe = (t) =>
   t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 
-let slugManual = false;
-$("fx-slug").addEventListener("input", () => { slugManual = $("fx-slug").value !== ""; });
-$("fx-nome").addEventListener("input", () => { if (!slugManual) $("fx-slug").value = slugDe($("fx-nome").value); });
-
 const erroFixa = (t) => { $("fx-erro").hidden = !t; $("fx-erro").textContent = t || ""; };
 
 $("nova-fixa").addEventListener("submit", async (e) => {
   e.preventDefault();
   erroFixa("");
-  let slug = slugDe($("fx-slug").value || $("fx-nome").value);
+  let slug = slugDe($("fx-nome").value);
   if (slug.length < 4) slug = (slug + "-" + novoId()).replace(/^-/, "").slice(0, 40);
   try {
     await pedir("/api/salas", { slug, nome: $("fx-nome").value, senha: $("fx-senha").value });
     $("nova-fixa").reset();
-    slugManual = false;
     carregarSalas();
   } catch (err) { erroFixa(err.message); }
 });
