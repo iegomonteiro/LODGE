@@ -111,7 +111,12 @@ input, select {
 .marca.mini { font-size: 1.2rem; }
 .acoes { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 .presenca { display: inline-flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .9rem; margin-right: .6rem; }
-.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); flex: 0 0 auto; }
+.conexao-txt { font-size: .72rem; white-space: nowrap; }
+#status[data-conexao="conectado"] .ponto { background: #7ed6a5; box-shadow: 0 0 9px rgba(126,214,165,.55); }
+#status[data-conexao="reconectando"] .ponto { background: var(--amber); animation: conexao-pulso 1s ease-in-out infinite alternate; }
+#status[data-conexao="desconectado"] .ponto { background: #ff8f80; box-shadow: 0 0 8px rgba(255,143,128,.4); }
+@keyframes conexao-pulso { to { opacity: .35; } }
 
 #principal {
   display: flex; flex-direction: column; gap: 1rem;
@@ -247,6 +252,7 @@ details .painel {
 .msg { display: flex; flex-direction: column; align-items: flex-start; max-width: 88%; }
 .msg.eu { align-self: flex-end; align-items: flex-end; }
 .msg .autor { font-size: .72rem; color: var(--muted); padding: 0 .35rem .15rem; }
+.msg .hora { font-size: .64rem; color: var(--muted); opacity: .8; padding: .12rem .35rem 0; font-variant-numeric: tabular-nums; }
 .balao { background: var(--surface2); padding: .5rem .85rem; border-radius: var(--r); word-break: break-word; }
 .msg.eu .balao { background: rgba(255, 179, 71, .07); border: 1px solid var(--gold-dim); }
 .aviso { align-self: center; margin: 0; color: var(--muted); font-size: .78rem; font-style: italic; }
@@ -397,7 +403,8 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   .logo-link { gap: .5rem; margin-right: auto; }
   .logo-link img { width: 26px; height: 26px; }
   .marca.mini { font-size: .95rem; letter-spacing: .28em; }
-  .presenca { margin: 0; font-size: .82rem; white-space: nowrap; }
+  .presenca { margin: 0; font-size: .82rem; white-space: nowrap; gap: .35rem; }
+  .conexao-txt { font-size: .65rem; }
   #copiar, #mic { padding: 0; width: 44px; justify-content: center; }
   #copiar-txt, #mic-txt { display: none; } /* no 390pt só o ícone cabe; o toque mostra o link/compartilhar */
   .avatar .voz { left: calc(50% + 6px); width: 20px; height: 20px; font-size: .65rem; }
