@@ -22,12 +22,21 @@
       <h1 class="marca">Loge</h1>
       <span class="filete"></span>
       <p class="tag">Seu camarote particular.</p>
-      <p class="sub">Crie seu perfil: só nome e foto, sem senha.</p>
-      <label class="foto-botao" title="Escolher foto">
+      <p class="sub">Crie seu perfil: só nome e um avatar.</p>
+
+      <div class="avatar-preview">
         <span id="novo-foto" class="disco grande-disco"></span>
-        <small>Escolher foto</small>
-        <input id="novo-arquivo" type="file" accept="image/*" hidden>
-      </label>
+      </div>
+
+      <div class="avatar-selector">
+        <div class="avatar-tabs" role="tablist">
+          <button type="button" class="avatar-tab ativo" data-cat="historicas">Históricas</button>
+          <button type="button" class="avatar-tab" data-cat="cinema">Cinema</button>
+          <button type="button" class="avatar-tab" data-cat="monstros">Monstros</button>
+        </div>
+        <div id="avatar-grid" class="avatar-grid"></div>
+      </div>
+
       <input id="novo-nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname">
       <button id="criar-perfil" class="btn primario grande">Criar perfil</button>
       <button id="so-rapida" class="link">Só quero uma sala rápida</button>
@@ -50,11 +59,17 @@
       </header>
 
       <div id="bloco-editar" class="bloco" hidden>
-        <label class="foto-botao">
+        <div class="avatar-preview">
           <span id="ed-foto" class="disco grande-disco"></span>
-          <small>Trocar foto</small>
-          <input id="ed-arquivo" type="file" accept="image/*" hidden>
-        </label>
+        </div>
+        <div class="avatar-selector">
+          <div class="avatar-tabs" role="tablist">
+            <button type="button" class="avatar-tab ativo" data-cat="historicas" data-ed="1">Históricas</button>
+            <button type="button" class="avatar-tab" data-cat="cinema" data-ed="1">Cinema</button>
+            <button type="button" class="avatar-tab" data-cat="monstros" data-ed="1">Monstros</button>
+          </div>
+          <div id="avatar-grid-ed" class="avatar-grid"></div>
+        </div>
         <input id="ed-nome" placeholder="Seu nome" maxlength="24">
         <button id="ed-salvar" class="btn primario">Salvar</button>
       </div>
