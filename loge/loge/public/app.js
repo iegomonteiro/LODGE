@@ -935,8 +935,13 @@ function mostrarControlesReacao() {
 }
 
 quadro.addEventListener("click", (e) => {
+  // Cliques nos controles não contam como toque fora do seletor.
+  // A checagem precisa vir antes de fechar o painel: o clique em #reagir
+  // abre o seletor e também propaga até #quadro.
+  if (e.target.closest("#reagir, #sair-cheia, #gif-panel")) return;
+
   // Em tela cheia no celular, tocar fora do seletor fecha os GIFs.
-  if (!gifPanel.hidden && !e.target.closest("#gif-panel")) {
+  if (!gifPanel.hidden) {
     gifPanel.hidden = true;
     modoReacao = false;
     gifBtn.setAttribute("aria-expanded", "false");
@@ -945,7 +950,6 @@ quadro.addEventListener("click", (e) => {
     atualizarViewportChat();
     programarOcultarControlesReacao();
   }
-  if (e.target.closest("#reagir, #sair-cheia, #gif-panel")) return;
   mostrarControlesReacao();
 });
 
