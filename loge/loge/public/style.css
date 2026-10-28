@@ -757,3 +757,143 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   .avatar-grid { grid-template-columns: repeat(4, 1fr); max-height: 180px; }
   .avatar-tab { padding: .35rem .6rem; font-size: .78rem; }
 }
+
+/* ---------- respiro extra nas etapas de entrada ---------- */
+/* Mantém a identidade visual, mas evita que os elementos pareçam comprimidos. */
+#sem-perfil #passo-nome,
+#sem-perfil #passo-avatar {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+}
+
+#sem-perfil #passo-nome input,
+#sem-perfil #passo-nome .btn,
+#sem-perfil #passo-avatar > .btn {
+  width: min(100%, 22rem);
+}
+
+#sem-perfil #passo-nome .link,
+#sem-perfil #passo-avatar > .link {
+  margin-top: -.2rem;
+}
+
+#sem-perfil #passo-avatar > .sub {
+  max-width: 28rem;
+  text-align: center;
+  line-height: 1.7;
+}
+
+#sem-perfil #passo-avatar .avatar-preview {
+  margin: .35rem 0 .4rem;
+}
+
+#sem-perfil #passo-avatar .disco.grande-disco {
+  width: 96px;
+  height: 96px;
+}
+
+#sem-perfil #passo-avatar .avatar-selector {
+  width: min(28rem, 100%);
+  gap: .9rem;
+}
+
+#sem-perfil #passo-avatar .avatar-tabs {
+  gap: .55rem;
+}
+
+#sem-perfil #passo-avatar .avatar-tab {
+  padding: .55rem .95rem;
+}
+
+#sem-perfil #passo-avatar .avatar-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .8rem;
+  max-height: 300px;
+  padding: .25rem;
+  scrollbar-gutter: stable;
+}
+
+#sem-perfil #passo-avatar .avatar-opcao {
+  width: 100%;
+  min-width: 0;
+}
+
+#sem-perfil #passo-avatar .foto-botao {
+  width: min(100%, 22rem);
+  gap: .45rem;
+  padding: .8rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  line-height: 1.5;
+  transition: border-color .2s, background .2s;
+}
+
+#sem-perfil #passo-avatar .foto-botao:hover {
+  border-color: var(--gold);
+  background: rgba(255, 179, 71, .04);
+}
+
+#sem-perfil #passo-avatar .foto-botao small {
+  font-size: .9rem;
+}
+
+@media (max-width: 480px) {
+  #sem-perfil #passo-nome,
+  #sem-perfil #passo-avatar {
+    gap: 1rem;
+  }
+
+  #sem-perfil #passo-avatar .disco.grande-disco {
+    width: 88px;
+    height: 88px;
+  }
+
+  #sem-perfil #passo-avatar .avatar-selector {
+    width: 100%;
+    gap: .85rem;
+  }
+
+  #sem-perfil #passo-avatar .avatar-tabs {
+    gap: .45rem;
+  }
+
+  #sem-perfil #passo-avatar .avatar-tab {
+    padding: .55rem .7rem;
+    font-size: .82rem;
+  }
+
+  #sem-perfil #passo-avatar .avatar-grid {
+    gap: .65rem;
+    max-height: 300px;
+    padding: .3rem;
+  }
+
+  #sem-perfil #passo-avatar .foto-botao {
+    padding: .85rem 1rem;
+  }
+
+  #sem-perfil #passo-nome .link,
+  #sem-perfil #passo-avatar > .link {
+    padding: .5rem .75rem;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  #sem-perfil #passo-nome,
+  #sem-perfil #passo-avatar {
+    gap: .65rem;
+  }
+
+  #sem-perfil #passo-avatar .disco.grande-disco {
+    width: 64px;
+    height: 64px;
+  }
+
+  #sem-perfil #passo-avatar .avatar-grid {
+    max-height: 150px;
+    gap: .45rem;
+  }
+}
+
