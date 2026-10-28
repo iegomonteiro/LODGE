@@ -62,12 +62,16 @@ function conectar() {
   clearTimeout(timerReconexao); // evita duas conexões se a reconexão foi antecipada
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha, foto: perfil?.foto, owner: perfil ? credenciais(perfil) : undefined }));
+  ws.onopen = () => {
+    definirEstadoConexao("conectando");
+    ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha, foto: perfil?.foto, owner: perfil ? credenciais(perfil) : undefined }));
+  };
   ws.onmessage = async ({ data }) => {
     const msg = JSON.parse(data);
     switch (msg.type) {
       case "joined":
         tentativas = 0;
+        definirEstadoConexao("conectado");
         myId = msg.id; hostId = msg.host; sharerId = msg.sharer;
         if (msg.sala) document.title = `${msg.sala.nome} · Loge`;
         msg.peers.forEach((p) => { nomes.set(p.id, p.name); fotos.set(p.id, p.foto); garantirAvatar(p.id, p.name, false, p.foto); criarPeer(p.id); });
@@ -110,8 +114,8 @@ function conectar() {
   };
   ws.onclose = () => {
     limparPeers();
-    if (encerrado) return;
-    $("contagem").textContent = "Reconectando…";
+    if (encerrado) { definirEstadoConexao("desconectado"); return; }
+    definirEstadoConexao("reconectando");
     timerReconexao = setTimeout(conectar, Math.min(1000 * 2 ** tentativas++, 10000));
   };
 }
@@ -137,6 +141,16 @@ function pedirSenha(errada, texto) {
 
 const enviarSinal = (to, data) =>
   ws?.readyState === 1 && ws.send(JSON.stringify({ type: "signal", to, data }));
+
+function definirEstadoConexao(estado) {
+  const status = $("status");
+  const texto = $("conexao-txt");
+  if (!status || !texto) return;
+  const rotulos = { conectando: "Conectando…", conectado: "Online", reconectando: "Reconectando…", desconectado: "Offline" };
+  status.dataset.conexao = estado;
+  status.title = rotulos[estado] || "Estado da conexão";
+  texto.textContent = rotulos[estado] || "Conectando…";
+}
 
 function atualizarStatus() {
   $("contagem").textContent = `${peers.size + 1} na sala`;
@@ -866,9 +880,16 @@ function mensagem({ from, name, text, gif }) {
     img.decoding = "async";
     balao.append(img);
   }
-  caixa.append(autor, balao);
-  $("msgs").append(caixa);
-  $("msgs").scrollTop = $("msgs").scrollHeight;
+  const hora = document.createElement("time");
+  const agora = new Date();
+  hora.className = "hora";
+  hora.dateTime = agora.toISOString();
+  hora.textContent = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(agora);
+  const mensagens = $("msgs");
+  const estavaNoFim = mensagens.scrollHeight - mensagens.scrollTop - mensagens.clientHeight < 80;
+  caixa.append(autor, balao, hora);
+  mensagens.append(caixa);
+  if (estavaNoFim || eu) mensagens.scrollTop = mensagens.scrollHeight;
   destacar(eu ? "eu" : from);
 }
 
@@ -963,15 +984,26 @@ document.addEventListener("webkitfullscreenchange", () => {
 });
 
 $("copiar").onclick = async () => {
+  const compartilharNoCelular = matchMedia("(pointer: coarse)").matches;
+  if (compartilharNoCelular && navigator.share) {
+    try {
+      await navigator.share({ title: document.title || "Loge", text: "Vem assistir comigo no Loge.", url: location.href });
+      return;
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+    }
+  }
   try { await navigator.clipboard.writeText(location.href); }
   catch {
-    // sem área de transferência (HTTP puro, alguns celulares): usa o compartilhamento do sistema ou mostra o link
-    if (navigator.share) { try { await navigator.share({ title: "Loge", url: location.href }); } catch {} return; }
+    if (navigator.share) {
+      try { await navigator.share({ title: document.title || "Loge", text: "Vem assistir comigo no Loge.", url: location.href }); return; }
+      catch (err) { if (err?.name === "AbortError") return; }
+    }
     prompt("Copie o link da sala:", location.href);
     return;
   }
   $("copiar-txt").textContent = "Copiado!";
-  setTimeout(() => ($("copiar-txt").textContent = "Copiar link"), 1500);
+  setTimeout(() => ($("copiar-txt").textContent = "Convidar"), 1500);
 };
 
 const anterior = {};
