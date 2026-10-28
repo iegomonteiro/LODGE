@@ -612,3 +612,60 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   .cartao h1 { margin: 0; font-size: 1.5rem; }
   .cartao .filete, .cartao .tag { display: none; }
 }
+
+/* ---------- entrada desktop: proporções próprias para monitores ---------- */
+/* Mantém o layout compacto do celular; em telas grandes, o cartão respira e fica centralizado. */
+@media (min-width: 901px) and (min-height: 521px) {
+  #entrada.home:has(> #sem-perfil:not([hidden])),
+  #entrada.home:has(> #rapida:not([hidden])) {
+    min-height: 100vh;
+    min-height: 100dvh;
+    place-items: center;
+    padding: 3rem 2rem;
+  }
+
+  #entrada.home > #sem-perfil.cartao,
+  #entrada.home > #rapida.cartao {
+    width: min(36rem, calc(100vw - 4rem));
+    gap: 1.15rem;
+    padding: 3.25rem clamp(2.5rem, 4vw, 4rem);
+    border-radius: 26px;
+  }
+
+  #entrada.home > #sem-perfil.cartao > img,
+  #entrada.home > #rapida.cartao > img {
+    width: 88px;
+    height: 88px;
+  }
+
+  #entrada.home > #sem-perfil.cartao h1,
+  #entrada.home > #rapida.cartao h1 {
+    font-size: clamp(3.4rem, 5vw, 4.6rem);
+  }
+
+  #entrada.home > #sem-perfil.cartao input:not([type="file"]),
+  #entrada.home > #rapida.cartao input:not([type="file"]) {
+    width: min(24rem, 100%);
+  }
+
+  #entrada.home > #sem-perfil.cartao .btn.grande,
+  #entrada.home > #rapida.cartao .btn.grande {
+    min-width: min(24rem, 100%);
+    justify-content: center;
+  }
+
+  #entrada.home > .painel-home {
+    width: min(48rem, 100%);
+    gap: 1.15rem;
+  }
+
+  .painel-home .bloco.linha {
+    column-gap: .8rem;
+    row-gap: .8rem;
+  }
+
+  .sala-fixa {
+    padding: 1rem 1.2rem;
+  }
+}
+
