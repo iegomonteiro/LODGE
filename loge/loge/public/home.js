@@ -1,11 +1,11 @@
-import { lerPerfil, salvarPerfil, sairDoPerfil, novoPerfil, credenciais, codigoDe, perfilDoCodigo, reduzirFoto, pintarDisco } from "/perfil.js";
+import { lerPerfil, salvarPerfil, sairDoPerfil, novoPerfil, credenciais, codigoDe, perfilDoCodigo, pintarDisco, AVATARES, CATEGORIAS } from "/perfil.js";
 
 const $ = (id) => document.getElementById(id);
 // getRandomValues funciona também em HTTP puro; randomUUID exige contexto seguro (HTTPS/localhost)
 const novoId = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join("");
 
 let perfil = lerPerfil();
-let fotoNova = null; // foto escolhida na criação ou edição
+let fotoNova = null; // avatar escolhido na criação ou edição
 
 function mostrar(qual) {
   for (const id of ["sem-perfil", "com-perfil", "rapida"]) $(id).hidden = id !== qual;
@@ -24,25 +24,55 @@ async function pedir(url, corpo) {
   return dados;
 }
 
-async function escolherFoto(input, alvo, nome) {
-  const f = input.files[0];
-  input.value = "";
-  if (!f) return null;
-  try {
-    const foto = await reduzirFoto(f);
-    pintarDisco(alvo, nome || "?", foto);
-    return foto;
-  } catch {
-    alert("Não consegui usar essa foto. Tente outra.");
-    return null;
+/* ---------- seletor de avatares ---------- */
+function montarGrid(gridEl, categoria, onSelect) {
+  gridEl.textContent = "";
+  const lista = AVATARES[categoria] || [];
+  for (const src of lista) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "avatar-opcao" + (fotoNova === src ? " selecionado" : "");
+    btn.title = src.split("/").pop();
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "";
+    img.loading = "lazy";
+    btn.append(img);
+    btn.onclick = () => {
+      fotoNova = src;
+      onSelect(src);
+      gridEl.querySelectorAll(".avatar-opcao").forEach((b) => b.classList.toggle("selecionado", b === btn));
+    };
+    gridEl.append(btn);
   }
+}
+
+function setupTabs(tabsContainer, gridId, previewId, isEdit = false) {
+  const grid = $(gridId);
+  const preview = $(previewId);
+  const tabs = tabsContainer.querySelectorAll(".avatar-tab");
+
+  const ativar = (cat) => {
+    tabs.forEach((t) => t.classList.toggle("ativo", t.dataset.cat === cat));
+    montarGrid(grid, cat, (src) => {
+      pintarDisco(preview, isEdit ? ($("ed-nome").value || "?") : ($("novo-nome").value || "+"), src);
+    });
+  };
+
+  tabs.forEach((tab) => {
+    tab.onclick = () => ativar(tab.dataset.cat);
+  });
+
+  // inicia na primeira categoria
+  ativar("historicas");
 }
 
 /* ---------- sem perfil ---------- */
 pintarDisco($("novo-foto"), "+", null);
-$("novo-nome").addEventListener("input", () => { if (!fotoNova) pintarDisco($("novo-foto"), $("novo-nome").value || "+", null); });
-$("novo-arquivo").addEventListener("change", async () => {
-  fotoNova = (await escolherFoto($("novo-arquivo"), $("novo-foto"), $("novo-nome").value)) || fotoNova;
+setupTabs(document.querySelector("#sem-perfil .avatar-tabs"), "avatar-grid", "novo-foto");
+
+$("novo-nome").addEventListener("input", () => {
+  if (!fotoNova) pintarDisco($("novo-foto"), $("novo-nome").value || "+", null);
 });
 
 const erroPerfil = (t) => { $("erro-perfil").hidden = !t; $("erro-perfil").textContent = t || ""; };
@@ -50,6 +80,7 @@ const erroPerfil = (t) => { $("erro-perfil").hidden = !t; $("erro-perfil").textC
 $("criar-perfil").onclick = () => {
   const nome = $("novo-nome").value.trim();
   if (!nome) return erroPerfil("Digite seu nome.");
+  if (!fotoNova) return erroPerfil("Escolha um avatar.");
   perfil = novoPerfil(nome, fotoNova);
   if (!salvarPerfil(perfil)) { perfil = null; return erroPerfil("Seu navegador não deixou guardar o perfil (modo privado?)."); }
   fotoNova = null;
@@ -59,7 +90,8 @@ $("novo-nome").addEventListener("keydown", (e) => { if (e.key === "Enter") $("cr
 $("tenho-codigo").onclick = () => { $("recuperar").hidden = !$("recuperar").hidden; };
 $("recuperar-ok").onclick = () => {
   const nome = $("novo-nome").value.trim();
-  if (!nome) return erroPerfil("Digite seu nome (e escolha a foto, se quiser) e depois recupere.");
+  if (!nome) return erroPerfil("Digite seu nome e escolha um avatar, depois recupere.");
+  if (!fotoNova) return erroPerfil("Escolha um avatar.");
   const p = perfilDoCodigo($("codigo-in").value, nome, fotoNova);
   if (!p) return erroPerfil("Esse código não está certo. Confira se copiou inteiro.");
   perfil = p;
@@ -90,11 +122,21 @@ $("editar-perfil").onclick = () => {
   $("bloco-codigo").hidden = true;
   const abrir = $("bloco-editar").hidden;
   $("bloco-editar").hidden = !abrir;
-  if (abrir) { fotoNova = perfil.foto; $("ed-nome").value = perfil.nome; pintarDisco($("ed-foto"), perfil.nome, perfil.foto); }
+  if (abrir) {
+    fotoNova = perfil.foto;
+    $("ed-nome").value = perfil.nome;
+    pintarDisco($("ed-foto"), perfil.nome, perfil.foto);
+    // re-setup das tabs de edição (para marcar o selecionado atual)
+    setupTabs(document.querySelector("#bloco-editar .avatar-tabs"), "avatar-grid-ed", "ed-foto", true);
+    // se já tinha avatar, tenta marcar a categoria correta
+    if (perfil.foto && perfil.foto.startsWith("/avatars/")) {
+      const cat = perfil.foto.split("/")[2];
+      const tab = document.querySelector(`#bloco-editar .avatar-tab[data-cat="${cat}"]`);
+      if (tab) tab.click();
+    }
+  }
 };
-$("ed-arquivo").addEventListener("change", async () => {
-  fotoNova = (await escolherFoto($("ed-arquivo"), $("ed-foto"), $("ed-nome").value)) || fotoNova;
-});
+
 $("ed-salvar").onclick = () => {
   const nome = $("ed-nome").value.trim();
   if (!nome) return;
