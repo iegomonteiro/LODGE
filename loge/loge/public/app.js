@@ -651,6 +651,51 @@ const gifPanel = $("gif-panel");
 const reagirBtn = $("reagir");
 let modoReacao = false;
 
+// Safari no iPhone mantém o layout viewport maior que a área visível quando o teclado abre.
+// Usamos visualViewport para redimensionar a sala e deixar o chat/GIFs acima do teclado.
+const viewportVisual = window.visualViewport;
+let campoChatFocado = false;
+function atualizarViewportChat() {
+  if (!isIOS || !viewportVisual || $("sala").hidden) return;
+  const tecladoAberto = campoChatFocado &&
+    viewportVisual.height < window.innerHeight * 0.82;
+  document.body.classList.toggle("teclado-ios", tecladoAberto);
+  if (tecladoAberto) {
+    document.documentElement.style.setProperty("--altura-visual", viewportVisual.height + "px");
+    requestAnimationFrame(() => {
+      const alvo = document.activeElement;
+      if (!alvo || !["texto", "gif-search"].includes(alvo.id)) return;
+      // Corrige o scroll interno do Safari sem deslocar a página inteira.
+      const limite = viewportVisual.offsetTop + viewportVisual.height - 12;
+      const rect = alvo.getBoundingClientRect();
+      if (rect.bottom > limite) {
+        $("lateral").scrollTop += rect.bottom - limite;
+      }
+    });
+  } else {
+    document.documentElement.style.removeProperty("--altura-visual");
+  }
+}
+if (viewportVisual) {
+  viewportVisual.addEventListener("resize", atualizarViewportChat);
+  viewportVisual.addEventListener("scroll", atualizarViewportChat);
+}
+document.addEventListener("focusin", (e) => {
+  if (!isIOS) return;
+  if (e.target?.id === "texto" || e.target?.id === "gif-search") {
+    campoChatFocado = true;
+    // Aguarda o Safari começar a animar o teclado antes de medir a área disponível.
+    setTimeout(atualizarViewportChat, 80);
+  }
+});
+document.addEventListener("focusout", (e) => {
+  if (!isIOS || !["texto", "gif-search"].includes(e.target?.id)) return;
+  setTimeout(() => {
+    campoChatFocado = ["texto", "gif-search"].includes(document.activeElement?.id);
+    atualizarViewportChat();
+  }, 100);
+});
+
 reagirBtn.onclick = () => {
   modoReacao = true;
   gifPanel.hidden = false;
@@ -658,6 +703,11 @@ reagirBtn.onclick = () => {
   if (!gifResults.childElementCount) buscarGifs("reaction");
   gifSearch.placeholder = "Buscar reação GIF...";
   gifSearch.focus();
+  // No iPhone, o foco abre o teclado; o visualViewport reposiciona a sala para mostrar os GIFs.
+  if (isIOS) {
+    campoChatFocado = true;
+    setTimeout(atualizarViewportChat, 80);
+  }
 };
 const gifSearch = $("gif-search");
 const gifResults = $("gif-results");
@@ -671,13 +721,27 @@ gifBtn.onclick = () => {
   gifBtn.setAttribute("aria-expanded", String(abrir));
   gifSearch.placeholder = "Buscar GIFs...";
   if (abrir && !gifResults.childElementCount) buscarGifs("");
-  if (abrir) gifSearch.focus();
+  if (abrir) {
+    gifSearch.focus();
+    if (isIOS) {
+      campoChatFocado = true;
+      setTimeout(atualizarViewportChat, 80);
+    }
+  } else {
+    campoChatFocado = false;
+    atualizarViewportChat();
+  }
 };
 $("gif-close").onclick = () => {
   gifPanel.hidden = true;
   gifBtn.setAttribute("aria-expanded", "false");
   modoReacao = false;
   gifSearch.placeholder = "Buscar GIFs...";
+  if (isIOS) {
+    gifSearch.blur();
+    campoChatFocado = $("texto") === document.activeElement;
+    setTimeout(atualizarViewportChat, 80);
+  }
 };
 gifSearch.addEventListener("input", () => {
   clearTimeout(buscaGifTimer);
