@@ -973,7 +973,7 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   color: #e7e8ef; overflow: hidden;
 }
 .transmissao-encerrada[hidden] { display: none; }
-.robo-sonolento { width: clamp(62px, 17%, 130px); height: auto; margin-bottom: .3rem; overflow: visible; }
+.robo-sonolento { width: clamp(76px, 21%, 160px); height: auto; margin-bottom: .3rem; overflow: visible; }
 .robo-sonolento .robot-body { filter: drop-shadow(0 0 5px rgba(170, 185, 235, .22)); }
 .transmissao-encerrada h2 { margin: 0; font-size: clamp(1rem, 2.2vw, 1.5rem); font-weight: 600; letter-spacing: -.025em; }
 .transmissao-encerrada p { margin: 0; max-width: 34rem; color: #aeb0bd; font-size: clamp(.75rem, 1.3vw, .95rem); line-height: 1.55; }
