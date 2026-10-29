@@ -97,7 +97,7 @@ function conectar() {
         break;
       case "host": hostId = msg.id; atualizarStatus(); break;
       case "sharer": sharerId = msg.id; if (!msg.id) { estadoRemoto = null; encerrarVideoRemoto(); } atualizarStatus(); atualizarEstadoTransmissao(); break;
-      case "share-ok": sharerId = myId; resolverReserva?.(msg); atualizarStatus(); break;
+      case "share-ok": sharerId = myId; resolverReserva?.(msg); atualizarStatus(); atualizarEstadoTransmissao(); break;
       case "share-denied":
         if (resolverReserva) resolverReserva(msg);
         else { negarPalco(msg); pararTransmissao(); }
@@ -387,6 +387,7 @@ function pararTransmissao() {
   modoArquivo = false;
   if (estava && ws?.readyState === 1) ws.send(JSON.stringify({ type: "share-stop" }));
   if (sharerId === myId) sharerId = null;
+  atualizarEstadoTransmissao();
   atualizarBotoes();
   atualizarStatus();
   atualizarEstadoTransmissao();
