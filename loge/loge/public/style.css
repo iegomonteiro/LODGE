@@ -973,7 +973,8 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   color: #e7e8ef; overflow: hidden;
 }
 .transmissao-encerrada[hidden] { display: none; }
-.robo-sonolento { width: clamp(120px, 22%, 210px); height: auto; margin-bottom: .3rem; overflow: visible; }
+.robo-sonolento { width: clamp(62px, 17%, 130px); height: auto; margin-bottom: .3rem; overflow: visible; }
+.robo-sonolento .robot-body { filter: drop-shadow(0 0 5px rgba(170, 185, 235, .22)); }
 .transmissao-encerrada h2 { margin: 0; font-size: clamp(1rem, 2.2vw, 1.5rem); font-weight: 600; letter-spacing: -.025em; }
 .transmissao-encerrada p { margin: 0; max-width: 34rem; color: #aeb0bd; font-size: clamp(.75rem, 1.3vw, .95rem); line-height: 1.55; }
 .transmissao-encerrada .transmissao-dica { color: #c4c6d2; }
@@ -982,24 +983,24 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 /* Animações do robô: tudo no mesmo ritmo de respiração (5 s). Sem movimento = o desenho parado de sempre. */
 .robot-bubble, .robot-zzz text { transform-box: fill-box; }
 /* a barriga tem dois grupos (ordem original do desenho): os dois escalam em volta do mesmo ponto do desenho */
-.robot-belly { transform-box: view-box; transform-origin: 120px 118px; animation: robo-barriga 5s ease-in-out infinite; }
+.robot-belly { transform-box: view-box; transform-origin: 420px 740px; animation: robo-barriga 5s ease-in-out infinite; }
 .robot-bubble { transform-origin: 0% 55%; animation: robo-bolha 5s ease-in-out infinite; } /* nasce no nariz, à esquerda da bolha */
 .robot-zzz text { transform-origin: 50% 100%; animation: robo-z 4s ease-in-out infinite both; }
 .robot-zzz text:nth-child(2) { animation-delay: .7s; }
 .robot-zzz text:nth-child(3) { animation-delay: 1.4s; }
 @keyframes robo-barriga {
   0%, 100% { transform: scale(1, 1); }
-  45% { transform: scale(1.025, 1.035); }
+  45% { transform: scale(1.02, 1.03); }
 }
 @keyframes robo-bolha { /* entra no nariz (inspira) e sai de novo (expira) */
   0%, 100% { transform: scale(.2); opacity: .15; }
   50%, 62% { transform: scale(1); opacity: .82; }
 }
 @keyframes robo-z {
-  0% { transform: translate(-3px, 5px); opacity: 0; }
+  0% { transform: translate(-10px, 16px); opacity: 0; }
   25% { opacity: 1; }
   70% { opacity: 1; }
-  100% { transform: translate(5px, -9px); opacity: 0; }
+  100% { transform: translate(16px, -30px); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .robot-belly, .robot-bubble, .robot-zzz text { animation: none !important; }
