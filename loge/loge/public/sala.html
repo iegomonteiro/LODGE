@@ -64,7 +64,7 @@
       <div id="quadro">
         <div id="palco"></div>
         <div id="transmissao-encerrada" class="transmissao-encerrada" hidden role="status" aria-live="polite">
-          <svg class="robo-sonolento" viewBox="150 90 660 900" role="img" aria-label="Robozinho dormindo sentado, com capacete, visor escuro, olhos fechados e uma bolha no nariz">
+          <svg class="robo-sonolento" viewBox="0 90 810 900" role="img" aria-label="Robozinho lanterninha de cinema dormindo sentado, de quepe vermelho, olhos fechados e uma bolha no nariz, com a lanterna caída no chão ao lado">
             <defs>
               <linearGradient id="rb-capacete" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stop-color="#9a9ca7"/><stop offset=".6" stop-color="#80828d"/><stop offset="1" stop-color="#6c6e79"/>
@@ -78,8 +78,34 @@
               <linearGradient id="rb-bolha" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stop-color="#9dbcf2"/><stop offset="1" stop-color="#7fa4e8"/>
               </linearGradient>
+              <linearGradient id="rb-quepe" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#b8383f"/><stop offset="1" stop-color="#85262c"/>
+              </linearGradient>
+              <linearGradient id="rb-ouro" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e3bf63"/><stop offset="1" stop-color="#b88a2e"/>
+              </linearGradient>
+              <linearGradient id="rb-lanterna" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#4a4c57"/><stop offset="1" stop-color="#25272e"/>
+              </linearGradient>
+              <radialGradient id="rb-brilho" cx=".5" cy=".5" r=".5">
+                <stop offset="0" stop-color="#ffe9a8" stop-opacity=".55"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+              </radialGradient>
             </defs>
             <ellipse cx="440" cy="930" rx="305" ry="28" fill="#000" fill-opacity=".42"/>
+            <!-- lanterna do lanterninha, caída no chão -->
+            <g class="robot-lanterna" transform="rotate(-4 130 915) translate(200 915) scale(1.2) translate(-200 -915)">
+              <ellipse cx="122" cy="936" rx="92" ry="8" fill="#000" fill-opacity=".4"/>
+              <circle cx="44" cy="915" r="46" fill="url(#rb-brilho)"/>
+              <rect x="78" y="901" width="116" height="30" rx="10" fill="url(#rb-lanterna)" stroke="#5b5d69" stroke-opacity=".7" stroke-width="3"/>
+              <rect x="96" y="901" width="7" height="30" fill="url(#rb-ouro)"/>
+              <rect x="152" y="901" width="7" height="30" fill="url(#rb-ouro)"/>
+              <rect x="84" y="905" width="104" height="5" rx="2.5" fill="#fff" fill-opacity=".16"/>
+              <circle cx="127" cy="903" r="5" fill="url(#rb-ouro)"/>
+              <path d="M80 894 L52 882 Q46 881 46 888 L46 942 Q46 949 52 948 L80 937 Z" fill="#5a5c68" stroke="#7a7c8a" stroke-opacity=".7" stroke-width="3" stroke-linejoin="round"/>
+              <ellipse cx="46" cy="915" rx="7" ry="27" fill="#ffe7a0"/>
+              <ellipse cx="44" cy="915" rx="3" ry="18" fill="#fff6d8" fill-opacity=".9"/>
+              <rect x="188" y="904" width="10" height="24" rx="4" fill="#2b2d35" stroke="#5b5d69" stroke-opacity=".6" stroke-width="2"/>
+            </g>
             <g class="robot-body">
               <!-- braços -->
               <path d="M272 704 C226 744 196 806 196 862 C196 892 226 910 254 900 C266 880 276 846 278 790 Z" fill="url(#rb-braco)" stroke="#b9bdd0" stroke-opacity=".8" stroke-width="5" stroke-linejoin="round"/>
@@ -102,10 +128,19 @@
               <path d="M268 566 C260 484 332 440 426 440 C522 440 592 484 597 566 L599 650 C599 706 540 738 426 738 C312 738 257 708 261 646 Z" fill="url(#rb-capacete)" stroke="#bfc3d6" stroke-opacity=".7" stroke-width="5.5" stroke-linejoin="round"/>
               <path d="M308 568 C308 510 360 488 432 488 C514 488 562 508 566 566 L568 636 C568 686 514 696 432 696 C350 696 302 686 304 636 Z" fill="#06070b" stroke="#1d1f29" stroke-width="3"/>
               <path d="M338 601 Q372 634 406 601 M462 601 Q496 634 530 601" fill="none" stroke="#a6c1f3" stroke-width="7" stroke-linecap="round"/>
-              <!-- antena -->
-              <path d="M358 406 L392 444" fill="none" stroke="#9a9cab" stroke-width="6.5" stroke-linecap="round"/>
-              <circle cx="351" cy="392" r="17" fill="#aeb0be"/>
-              <circle cx="346" cy="386" r="5" fill="#d2d4df" fill-opacity=".7"/>
+              <!-- quepe de lanterninha de cinema (inclinado, meio caído de sono) -->
+              <g class="robot-quepe" transform="rotate(-5 425 472)">
+                <path d="M296 484 L311 410 Q313 399 324 399 L526 399 Q537 399 539 410 L554 484 Q555 496 543 496 L307 496 Q295 496 296 484 Z" fill="url(#rb-quepe)" stroke="#6f1d22" stroke-opacity=".8" stroke-width="4" stroke-linejoin="round"/>
+                <ellipse cx="425" cy="400" rx="100" ry="12" fill="#c9484f" stroke="#e3bf63" stroke-width="4"/>
+                <path d="M298 464 L552 464 L555 490 Q556 496 546 496 L304 496 Q294 496 296 490 Z" fill="url(#rb-ouro)" stroke="#8a6620" stroke-opacity=".8" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M306 478 L544 478" stroke="#8a6620" stroke-opacity=".35" stroke-width="2"/>
+                <path d="M425 413 L431 428 L448 429 L435 439 L440 455 L425 446 L410 455 L415 439 L402 429 L419 428 Z" fill="url(#rb-ouro)" stroke="#8a6620" stroke-opacity=".7" stroke-width="2" stroke-linejoin="round"/>
+                <circle cx="425" cy="392" r="7" fill="url(#rb-ouro)" stroke="#8a6620" stroke-opacity=".7" stroke-width="2"/>
+              </g>
+              <!-- antena (sai do quepe) -->
+              <path d="M360 399 L338 364" fill="none" stroke="#9a9cab" stroke-width="6.5" stroke-linecap="round"/>
+              <circle cx="332" cy="353" r="16" fill="#aeb0be"/>
+              <circle cx="327" cy="347" r="5" fill="#d2d4df" fill-opacity=".7"/>
             </g>
             <g class="robot-bubble">
               <circle cx="585" cy="560" r="52" fill="url(#rb-bolha)" fill-opacity=".94" stroke="#e3edff" stroke-opacity=".95" stroke-width="5"/>
@@ -113,7 +148,7 @@
               <circle cx="611" cy="530" r="5.5" fill="#fff" fill-opacity=".8"/>
             </g>
             <g class="robot-zzz" fill="#9db8ef" font-family="Inter, system-ui, sans-serif" font-weight="500">
-              <text x="540" y="436" font-size="50">Z</text><text x="584" y="361" font-size="60">Z</text><text x="630" y="268" font-size="72">Z</text><text x="698" y="170" font-size="80">Z</text>
+              <text x="568" y="424" font-size="50">Z</text><text x="606" y="352" font-size="60">Z</text><text x="650" y="262" font-size="72">Z</text><text x="716" y="168" font-size="80">Z</text>
             </g>
           </svg>
           <h2>Transmissão encerrada</h2>
