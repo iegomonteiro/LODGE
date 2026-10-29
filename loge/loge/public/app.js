@@ -154,12 +154,17 @@ function definirEstadoConexao(estado) {
   texto.textContent = rotulos[estado] || "Conectando…";
 }
 
+// O robozinho "Transmissão encerrada" só aparece depois que uma transmissão realmente aconteceu e terminou.
+// Antes disso, o palco vazio mostra "Nenhuma transmissão ainda…".
+let jaHouveTransmissao = false;
 function atualizarEstadoTransmissao() {
   const aviso = $("transmissao-encerrada");
   if (!aviso) return;
-  const ativa = !!sharerId;
-  aviso.hidden = ativa;
-  $("quadro")?.classList.toggle("sem-transmissao", !ativa);
+  const ativa = !!sharerId || !!locais.tela || modoArquivo; // eu mesmo começando a transmitir também conta
+  if (ativa) jaHouveTransmissao = true;
+  const encerrada = !ativa && jaHouveTransmissao;
+  aviso.hidden = !encerrada;
+  $("quadro")?.classList.toggle("sem-transmissao", encerrada);
 }
 function encerrarVideoRemoto() {
   document.querySelectorAll("#palco video:not(#v-local)").forEach(devolverPlayer);
