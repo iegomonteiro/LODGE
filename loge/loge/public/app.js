@@ -76,6 +76,7 @@ function conectar() {
         if (msg.sala) document.title = `${msg.sala.nome} · Loge`;
         msg.peers.forEach((p) => { nomes.set(p.id, p.name); fotos.set(p.id, p.foto); garantirAvatar(p.id, p.name, false, p.foto); criarPeer(p.id); });
         atualizarStatus();
+        atualizarEstadoTransmissao();
         if (locais.tela) ws.send(JSON.stringify({ type: "share-start" })); // reconectou transmitindo
         if (locais.voz) enviarMic(); // reconectou na voz
         break;
@@ -92,9 +93,10 @@ function conectar() {
         aviso(`${nomes.get(msg.id) || "Alguém"} saiu`);
         removerPeer(msg.id);
         atualizarStatus();
+        atualizarEstadoTransmissao();
         break;
       case "host": hostId = msg.id; atualizarStatus(); break;
-      case "sharer": sharerId = msg.id; if (!msg.id) estadoRemoto = null; atualizarStatus(); break;
+      case "sharer": sharerId = msg.id; if (!msg.id) { estadoRemoto = null; encerrarVideoRemoto(); } atualizarStatus(); atualizarEstadoTransmissao(); break;
       case "share-ok": sharerId = myId; resolverReserva?.(msg); atualizarStatus(); break;
       case "share-denied":
         if (resolverReserva) resolverReserva(msg);
@@ -150,6 +152,19 @@ function definirEstadoConexao(estado) {
   status.dataset.conexao = estado;
   status.title = rotulos[estado] || "Estado da conexão";
   texto.textContent = rotulos[estado] || "Conectando…";
+}
+
+function atualizarEstadoTransmissao() {
+  const aviso = $("transmissao-encerrada");
+  if (!aviso) return;
+  const ativa = !!sharerId;
+  aviso.hidden = ativa;
+  $("quadro")?.classList.toggle("sem-transmissao", !ativa);
+}
+function encerrarVideoRemoto() {
+  document.querySelectorAll("#palco video:not(#v-local)").forEach(devolverPlayer);
+  renderRemoto();
+  atualizarWakeLock();
 }
 
 function atualizarStatus() {
@@ -350,6 +365,7 @@ $("tela").onclick = async () => {
 
 function transmitir(stream) {
   locais.tela = stream;
+  atualizarEstadoTransmissao();
   stream.getVideoTracks()[0]?.addEventListener("ended", pararTransmissao);
   peers.forEach((p) => adicionarStream(p, "tela"));
   atualizarBotoes();
@@ -373,6 +389,7 @@ function pararTransmissao() {
   if (sharerId === myId) sharerId = null;
   atualizarBotoes();
   atualizarStatus();
+  atualizarEstadoTransmissao();
   atualizarWakeLock();
 }
 $("parar").onclick = pararTransmissao;
@@ -480,6 +497,7 @@ function mostrarRemoto(peerId, stream) {
     // sem pausa para ninguém: se algo pausar (toque, player nativo do iPhone, trocar de app), volta a tocar
     el.onpause = () => { if (!el.ended && el.srcObject) el.play().catch(() => {}); };
     $("palco").append(el);
+    atualizarEstadoTransmissao();
     tocarComSom(el);
     stream.onremovetrack = () => {
       if (!stream.getTracks().length) { devolverPlayer(el); atualizarWakeLock(); renderRemoto(); }
