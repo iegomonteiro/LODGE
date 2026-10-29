@@ -978,3 +978,23 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 .transmissao-encerrada p { margin: 0; max-width: 34rem; color: #aeb0bd; font-size: clamp(.75rem, 1.3vw, .95rem); line-height: 1.55; }
 .transmissao-encerrada .transmissao-dica { color: #c4c6d2; }
 #quadro.sem-transmissao #palco { visibility: hidden; }
+
+@keyframes robo-respirar {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(1.5px) scale(1.012, 1.025); }
+}
+@keyframes robo-bolha {
+  0%, 100% { transform: scale(.88); opacity: .72; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes robo-zzz {
+  0%, 100% { transform: translateY(2px); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes robo-z {
+  0%, 100% { opacity: .55; }
+  45% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .robot-body, .robot-bubble, .robot-zzz, .robot-zzz text { animation: none !important; }
+}
