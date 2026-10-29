@@ -961,3 +961,20 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
   }
 }
 
+
+
+/* ---------- transmissão encerrada: robô sonolento minimalista ---------- */
+#quadro { position: relative; }
+.transmissao-encerrada {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .55rem; padding: clamp(1rem, 4vw, 2.5rem);
+  text-align: center; background: radial-gradient(ellipse at center, #1a1b23 0%, #101116 72%);
+  color: #e7e8ef; overflow: hidden;
+}
+.transmissao-encerrada[hidden] { display: none; }
+.robo-sonolento { width: clamp(120px, 22%, 210px); height: auto; margin-bottom: .3rem; overflow: visible; }
+.transmissao-encerrada h2 { margin: 0; font-size: clamp(1rem, 2.2vw, 1.5rem); font-weight: 600; letter-spacing: -.025em; }
+.transmissao-encerrada p { margin: 0; max-width: 34rem; color: #aeb0bd; font-size: clamp(.75rem, 1.3vw, .95rem); line-height: 1.55; }
+.transmissao-encerrada .transmissao-dica { color: #c4c6d2; }
+#quadro.sem-transmissao #palco { visibility: hidden; }
