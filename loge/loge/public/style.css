@@ -1020,3 +1020,10 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 .vol-linha { display: flex; align-items: center; gap: .6rem; }
 .vol-linha input[type="range"] { flex: 1; min-width: 0; }
 .vol-linha output { min-width: 3.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--amber); font-size: .85rem; }
+
+/* Amplificador do áudio do filme */
+.volume-400 { white-space: nowrap; min-width: 4.4rem; font-weight: 700; letter-spacing: .02em; }
+.volume-400.ativo { border-color: var(--amber); color: var(--amber); background: rgba(255, 179, 71, .13); box-shadow: 0 0 0 1px rgba(255, 179, 71, .12) inset; }
+@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
+  #remoto .volume-400 { display: inline-flex; }
+}
