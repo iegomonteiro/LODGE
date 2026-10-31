@@ -1005,3 +1005,18 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 @media (prefers-reduced-motion: reduce) {
   .robot-belly, .robot-bubble, .robot-zzz text { animation: none !important; }
 }
+
+/* ---------- volume de cada colega ---------- */
+.avatar.ajustavel { cursor: pointer; }
+.avatar.ajustavel:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; border-radius: 12px; }
+.avatar figcaption[data-vol]:not([data-vol=""])::after { content: " " attr(data-vol) "%"; color: var(--amber); }
+.vol-pop {
+  position: fixed; z-index: 60; width: min(16rem, calc(100vw - 16px));
+  display: grid; gap: .6rem; padding: .85rem .95rem;
+  background: var(--surface2, #232733); border: 1px solid var(--gold-dim); border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .5);
+}
+.vol-pop strong { font-size: .9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vol-linha { display: flex; align-items: center; gap: .6rem; }
+.vol-linha input[type="range"] { flex: 1; min-width: 0; }
+.vol-linha output { min-width: 3.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--amber); font-size: .85rem; }
