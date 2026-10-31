@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teste do microfone · Loge</title>
+<style>
+  body { margin: 0; padding: 16px; background: #0e0f13; color: #e9e7e2; font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  h1 { font-size: 1.2rem; margin: 0 0 .5rem; }
+  button { font: inherit; padding: .8rem 1rem; margin: .3rem .3rem .3rem 0; border-radius: 10px; border: 1px solid #d9a441; background: #ffb347; color: #111; font-weight: 600; }
+  pre { white-space: pre-wrap; word-break: break-word; background: #171a21; border: 1px solid #2a2e3a; border-radius: 10px; padding: .8rem; font-size: .85rem; }
+  .ok { color: #7be29a } .no { color: #ff8f80 }
+</style></head><body>
+<h1>Teste do microfone</h1>
+<p>Toque nos botões e mande um print desta tela.</p>
+<button id="b1">1. Testar microfone</button>
+<button id="b2">2. Testar com sessão "playback"</button>
+<pre id="saida">Carregando…</pre>
+<script>
+const out = document.getElementById("saida");
+const linhas = [];
+const log = (t, cls) => { linhas.push(cls ? `<span class="${cls}">${t}</span>` : t); out.innerHTML = linhas.join("\n"); };
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+log("Navegador: " + esc(navigator.userAgent));
+log("Página segura (HTTPS): " + window.isSecureContext, window.isSecureContext ? "ok" : "no");
+log("getUserMedia existe: " + !!navigator.mediaDevices?.getUserMedia, navigator.mediaDevices?.getUserMedia ? "ok" : "no");
+log("audioSession: " + (navigator.audioSession ? navigator.audioSession.type : "não suportado"));
+(async () => {
+  try { const p = await navigator.permissions.query({ name: "microphone" }); log("Permissão do microfone: " + p.state); } catch { log("Permissão do microfone: (este navegador não informa)"); }
+  try { const d = await navigator.mediaDevices.enumerateDevices(); log("Entradas de áudio vistas: " + d.filter((x) => x.kind === "audioinput").length); } catch (e) { log("enumerateDevices falhou: " + esc(e.name), "no"); }
+})();
+async function testar(sessao) {
+  try { if (sessao && navigator.audioSession) navigator.audioSession.type = sessao; } catch (e) { log("Não consegui mudar audioSession: " + esc(e.name)); }
+  log(`\n▶ Pedindo microfone (audioSession = ${navigator.audioSession ? navigator.audioSession.type : "n/a"})…`);
+  const t0 = Date.now();
+  try {
+    const st = await Promise.race([navigator.mediaDevices.getUserMedia({ audio: true }), new Promise((_, r) => setTimeout(() => r(Object.assign(new Error("sem resposta em 12 s"), { name: "Timeout" })), 12000))]);
+    const f = st.getAudioTracks()[0];
+    log(`✔ FUNCIONOU em ${Date.now() - t0} ms: ${esc(f.label || "microfone")} (${f.readyState})`, "ok");
+    st.getTracks().forEach((x) => x.stop());
+  } catch (e) { log(`✘ FALHOU: ${esc(e.name)} — ${esc(e.message || "")}`, "no"); }
+}
+document.getElementById("b1").onclick = () => testar(null);
+document.getElementById("b2").onclick = () => testar("playback");
+</script></body></html>

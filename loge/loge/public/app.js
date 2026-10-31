@@ -654,6 +654,10 @@ const volDe = (id) => {
   return volumes.get(id);
 };
 
+// "playback" toca mesmo com a chave de silêncio, mas IMPEDE o iPhone de abrir o microfone. "play-and-record" faz as duas coisas.
+function modoAudioConversa() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== "play-and-record") navigator.audioSession.type = "play-and-record"; } catch {}
+}
 function ligarGanho(el, v) {
   try {
     if (el._ganho) { el._ganho.gain.gain.value = v; return true; }
@@ -672,7 +676,7 @@ function ligarGanho(el, v) {
     fonte.connect(gain); gain.connect(compressor);
     el.muted = true; // o som sai pelo WebAudio; o elemento só mantém o fluxo ligado
     el._ganho = { fonte, gain };
-    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {} // iPhone: não calar com a chave de silêncio
+    modoAudioConversa(); // iPhone: não calar com a chave de silêncio, sem bloquear o microfone
     return true;
   } catch { return false; }
 }
@@ -789,6 +793,7 @@ async function abrirMicrofone() {
     { audio: true, video: false },
   ];
   let ultimo;
+  modoAudioConversa(); // a sessão de áudio precisa permitir gravação antes do pedido
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     for (const pedido of pedidos) {
       try { return await comTempo(navigator.mediaDevices.getUserMedia(pedido), 12000); }
@@ -808,7 +813,8 @@ const erroMic = (e) =>
   : e.name === "NotReadableError" || e.name === "AbortError"
     ? "O microfone está em uso por outro app ou aba. Feche a outra aba do Loge (ou o app que usa o microfone) e toque de novo."
   : e.name === "TimeoutError" ? "O celular não respondeu ao pedido do microfone. Toque de novo."
-  : "Não consegui abrir o microfone. Toque de novo.";
+  : e.name === "SecurityError" ? "O navegador bloqueou o microfone neste site. Abra o endereço com https:// e confira as permissões do site."
+  : `Não consegui abrir o microfone (${e.name || "erro"}${e.message ? ": " + String(e.message).slice(0, 80) : ""}). Toque de novo.`;
 
 // Vigia a faixa do microfone: o iPhone costuma só silenciá-la (evento "mute") quando outro app ou uma ligação a interrompe,
 // e o botão continuava "ligado" sem ninguém ouvir.
@@ -876,6 +882,7 @@ async function entrarNaVoz() {
   } catch (e) {
     abrindoMic = false;
     atualizarMic();
+    console.error("Microfone:", e);
     return aviso(erroMic(e));
   }
   abrindoMic = false;
