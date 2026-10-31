@@ -11,7 +11,7 @@ const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, se
 const nomes = new Map(); // id -> nome
 const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmissão de tela/arquivo)
 const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
-let micMudo = false, abrindoMic = false;
+let micMudo = false, abrindoMic = false;\nlet filmeAmplificado = false;
 const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
 const perfil = lerPerfil(); // nome + foto + código do dono (só neste navegador); null = visitante sem perfil
 const fotos = new Map();    // id -> foto (data URL) dos outros
@@ -576,7 +576,68 @@ function mostrarRemoto(peerId, stream) {
   atualizarWakeLock();
 }
 
-/* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
+/* ---------- amplificação do áudio do filme (até 400%) ---------- */
+function aplicarGanhoFilme(el) {
+  try {
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    ctxAudio.resume?.();
+    if (!compressor) {
+      compressor = ctxAudio.createDynamicsCompressor();
+      compressor.threshold.value = -12;
+      compressor.ratio.value = 6;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.2;
+      compressor.connect(ctxAudio.destination);
+    }
+    if (!el._filmeGanho) {
+      const fonte = ctxAudio.createMediaElementSource(el);
+      const ganho = ctxAudio.createGain();
+      fonte.connect(ganho);
+      ganho.connect(compressor);
+      el._filmeGanho = { fonte, ganho };
+    }
+    el._filmeGanho.ganho.gain.value = 4 * ($("rc-vol").value / 100);
+    el.muted = true;
+    return true;
+  } catch (e) {
+    console.warn("Não foi possível amplificar o áudio do filme:", e);
+    return false;
+  }
+}
+function desligarGanhoFilme(el) {
+  const g = el._filmeGanho;
+  if (!g) return;
+  try { g.fonte.disconnect(); g.ganho.disconnect(); } catch {}
+  el._filmeGanho = null;
+  el.muted = false;
+}
+function atualizarBotaoAmplificador() {
+  const b = $("filme-400");
+  if (!b) return;
+  b.classList.toggle("ativo", filmeAmplificado);
+  b.setAttribute("aria-pressed", String(filmeAmplificado));
+  b.textContent = filmeAmplificado ? "400% ligado" : "400%";
+  b.title = filmeAmplificado ? "Desativar amplificação e voltar ao volume normal" : "Amplificar o áudio do filme até 4 vezes";
+}
+$("filme-400").onclick = () => {
+  const videos = [...document.querySelectorAll("#palco video[data-stream]")];
+  if (!videos.length) return aviso("Não há filme sendo reproduzido neste momento.");
+  if (filmeAmplificado) {
+    filmeAmplificado = false;
+    videos.forEach((v) => desligarGanhoFilme(v));
+  } else {
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    ctxAudio.resume?.();
+    const ok = videos.every(aplicarGanhoFilme);
+    if (!ok) {
+      videos.forEach((v) => desligarGanhoFilme(v));
+      return aviso("Este navegador não conseguiu amplificar o áudio. Tente tocar novamente no botão.");
+    }
+    filmeAmplificado = true;
+  }
+  atualizarBotaoAmplificador();
+};
+\n/* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
 let wakeLock = null, pedindoWakeLock = false;
 async function atualizarWakeLock() {
   if (!("wakeLock" in navigator) || pedindoWakeLock) return;
