@@ -624,7 +624,7 @@ $("filme-400").onclick = () => {
   if (!videos.length) return aviso("Não há filme sendo reproduzido neste momento.");
   if (filmeAmplificado) {
     filmeAmplificado = false;
-    videos.forEach((v) => desligarGanhoFilme(v));
+    videos.forEach((v) => atualizarGanhoFilme(v));
   } else {
     ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
     ctxAudio.resume?.();
