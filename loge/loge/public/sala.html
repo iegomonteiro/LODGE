@@ -246,6 +246,14 @@
     </aside>
   </div>
 
+  <div id="vol-pop" class="vol-pop" hidden role="dialog" aria-label="Volume deste colega">
+    <strong id="vol-nome"></strong>
+    <div class="vol-linha">
+      <input id="vol-range" type="range" min="0" max="300" step="5" value="100" aria-label="Volume deste colega">
+      <output id="vol-valor" for="vol-range">100%</output>
+    </div>
+    <button id="vol-normal" class="btn" type="button">Voltar ao normal</button>
+  </div>
   <div id="voz" hidden></div> <!-- onde tocam os áudios dos outros (chat de voz) -->
   <script type="module" src="/app.js"></script>
 </body>

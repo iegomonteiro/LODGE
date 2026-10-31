@@ -207,6 +207,14 @@ function garantirAvatar(id, nome, eu = false, foto = null) {
   voz.hidden = true;
 
   el.append(disco, legenda, voz);
+  if (!eu) { // toque na pessoa para ajustar o volume dela
+    el.classList.add("ajustavel");
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    el.title = "Ajustar o volume de " + nome;
+    el.addEventListener("click", (e) => { e.stopPropagation(); abrirVolume(id); });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirVolume(id); } });
+  }
 
   const lista = $("avatares");
   const meu = lista.querySelector('[data-avatar="eu"]');
@@ -285,6 +293,8 @@ function removerPeer(id) {
   });
   medidores.get(id)?.(); medidores.delete(id);
   vozEstado.delete(id);
+  volumes.delete(id);
+  if (volAberto === id) fecharVolume();
 }
 
 /* ---------- envio de streams (tela, arquivo ou microfone) ---------- */
@@ -474,6 +484,7 @@ function devolverPlayer(el) {
   pendentes.delete(el);
   semSom.delete(el);
   el.onpause = null;
+  desligarGanho(el);
   try { el.pause(); } catch {}
   el.srcObject = null;
   delete el.dataset.stream;
@@ -563,8 +574,98 @@ function tocarVoz(peerId, stream) {
   $("voz").append(el);
   tocar(el);
   ouvirNivel(stream, peerId);
+  aplicarVolume(peerId); // volume que você já tinha escolhido para esta pessoa
   stream.onremovetrack = () => { if (!stream.getTracks().length) devolverPlayer(el); };
 }
+
+/* ---------- volume de cada colega (0 a 300%) ---------- */
+// Até 100% usa o próprio elemento de áudio. Acima (ou abaixo, no iPhone, que ignora element.volume) o áudio passa
+// por um ganho do WebAudio, com um compressor no fim para o volume alto não estourar.
+const volumes = new Map(); // peerId -> 0..3 (1 = normal)
+let compressor = null, volAberto = null;
+const chaveVol = (nome) => "loge:vol:" + nome;
+const volGuardado = (nome) => {
+  try {
+    const bruto = localStorage.getItem(chaveVol(nome));
+    const v = Number(bruto);
+    return bruto !== null && Number.isFinite(v) && v >= 0 && v <= 3 ? v : 1;
+  } catch { return 1; }
+};
+const volDe = (id) => {
+  if (!volumes.has(id)) volumes.set(id, volGuardado(nomes.get(id) || ""));
+  return volumes.get(id);
+};
+
+function ligarGanho(el, v) {
+  try {
+    if (el._ganho) { el._ganho.gain.gain.value = v; return true; }
+    const stream = el.srcObject;
+    if (!stream) return false;
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    ctxAudio.resume?.();
+    if (!compressor) {
+      compressor = ctxAudio.createDynamicsCompressor();
+      compressor.threshold.value = -12; compressor.ratio.value = 6; compressor.attack.value = 0.003; compressor.release.value = 0.2;
+      compressor.connect(ctxAudio.destination);
+    }
+    const fonte = ctxAudio.createMediaStreamSource(stream);
+    const gain = ctxAudio.createGain();
+    gain.gain.value = v;
+    fonte.connect(gain); gain.connect(compressor);
+    el.muted = true; // o som sai pelo WebAudio; o elemento só mantém o fluxo ligado
+    el._ganho = { fonte, gain };
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {} // iPhone: não calar com a chave de silêncio
+    return true;
+  } catch { return false; }
+}
+function desligarGanho(el) {
+  const g = el._ganho;
+  if (!g) return;
+  try { g.fonte.disconnect(); g.gain.disconnect(); } catch {}
+  el._ganho = null;
+  el.muted = false;
+}
+
+function aplicarVolume(peerId) {
+  const v = volDe(peerId);
+  document.querySelectorAll(`audio[data-peer="${peerId}"]`).forEach((el) => {
+    if (v === 1) { desligarGanho(el); el.volume = 1; return; }
+    if (!ligarGanho(el, v)) el.volume = Math.min(1, v); // sem WebAudio: só dá para abaixar
+  });
+  const legenda = document.querySelector(`[data-avatar="${peerId}"] figcaption`);
+  if (legenda) legenda.dataset.vol = v === 1 ? "" : String(Math.round(v * 100)); // o CSS mostra "· 200%" ao lado do nome
+}
+
+const pop = () => $("vol-pop");
+function abrirVolume(id) {
+  const av = document.querySelector(`[data-avatar="${id}"]`);
+  if (!av) return;
+  volAberto = id;
+  $("vol-nome").textContent = nomes.get(id) || "Colega";
+  $("vol-range").value = Math.round(volDe(id) * 100);
+  $("vol-valor").textContent = $("vol-range").value + "%";
+  const p = pop();
+  p.hidden = false;
+  const r = av.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+  const left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+  const top = r.bottom + 8 + h > innerHeight ? Math.max(8, r.top - h - 8) : r.bottom + 8;
+  p.style.left = left + "px"; p.style.top = top + "px";
+  $("vol-range").focus({ preventScroll: true });
+}
+function fecharVolume() { pop().hidden = true; volAberto = null; }
+function mudarVolume(pct, salvar) {
+  if (!volAberto) return;
+  const v = pct / 100;
+  volumes.set(volAberto, v);
+  $("vol-valor").textContent = pct + "%";
+  aplicarVolume(volAberto);
+  if (salvar) { try { localStorage.setItem(chaveVol(nomes.get(volAberto) || ""), String(v)); } catch {} }
+}
+$("vol-range").addEventListener("input", () => mudarVolume(Number($("vol-range").value), false));
+$("vol-range").addEventListener("change", () => mudarVolume(Number($("vol-range").value), true));
+$("vol-normal").addEventListener("click", () => { $("vol-range").value = 100; mudarVolume(100, true); });
+document.addEventListener("pointerdown", (e) => { if (volAberto && !pop().contains(e.target) && !e.target.closest(".avatar.ajustavel")) fecharVolume(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && volAberto) fecharVolume(); });
 
 // Anel dourado no avatar de quem está falando (mede o volume da faixa; não muda o áudio)
 function ouvirNivel(stream, chave) {
