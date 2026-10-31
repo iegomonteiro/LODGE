@@ -297,6 +297,9 @@ wss.on("connection", (ws) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
+    // O site manda "ping" de tempos em tempos; se o "pong" não voltar, ele sabe que a conexão morreu e reconecta
+    if (msg.type === "ping") return send(ws, { type: "pong" });
+
     if (msg.type === "join") {
       if (roomId) return;
       const pedida = String(msg.room);
