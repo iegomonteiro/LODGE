@@ -63,12 +63,16 @@ function conectar() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}`);
   ws.onopen = () => {
+    ultimoSinal = Date.now();
+    iniciarBatimento();
     definirEstadoConexao("conectando");
     ws.send(JSON.stringify({ type: "join", room: roomId, name: nomeAtual, password: senha, foto: perfil?.foto, owner: perfil ? credenciais(perfil) : undefined }));
   };
   ws.onmessage = async ({ data }) => {
+    ultimoSinal = Date.now();
     const msg = JSON.parse(data);
     switch (msg.type) {
+      case "pong": break;
       case "joined":
         tentativas = 0;
         definirEstadoConexao("conectado");
@@ -78,7 +82,7 @@ function conectar() {
         atualizarStatus();
         atualizarEstadoTransmissao();
         if (locais.tela) ws.send(JSON.stringify({ type: "share-start" })); // reconectou transmitindo
-        if (locais.voz) enviarMic(); // reconectou na voz
+        if (locais.voz) { enviarMic(); recuperarMic(); } // reconectou na voz: confere se o microfone ainda está vivo
         break;
       case "peer-joined":
         nomes.set(msg.id, msg.name);
@@ -115,12 +119,59 @@ function conectar() {
     }
   };
   ws.onclose = () => {
+    pararBatimento();
     limparPeers();
     if (encerrado) { definirEstadoConexao("desconectado"); return; }
     definirEstadoConexao("reconectando");
     timerReconexao = setTimeout(conectar, Math.min(1000 * 2 ** tentativas++, 10000));
   };
 }
+
+/* ---------- conexão viva? ---------- */
+// No celular a conexão pode morrer sem aviso (troca de rede, tela bloqueada): o navegador continua dizendo "conectado"
+// e as mensagens somem. Por isso o site manda um "ping" e, se nada voltar, derruba e reconecta na hora.
+let ultimoSinal = Date.now(), timerBatimento = null, timerVerifica = null;
+const BATIMENTO_MS = 10_000, SEM_SINAL_MS = 25_000;
+
+function iniciarBatimento() {
+  pararBatimento();
+  timerBatimento = setInterval(() => {
+    if (ws?.readyState !== 1) return;
+    if (Date.now() - ultimoSinal > SEM_SINAL_MS) return reconectarJa("sem resposta do servidor");
+    ws.send(JSON.stringify({ type: "ping" }));
+  }, BATIMENTO_MS);
+}
+function pararBatimento() { clearInterval(timerBatimento); clearTimeout(timerVerifica); timerBatimento = timerVerifica = null; }
+
+function reconectarJa() {
+  if (encerrado) return;
+  const velho = ws;
+  if (velho) { velho.onopen = velho.onmessage = velho.onclose = null; try { velho.close(); } catch {} }
+  pararBatimento();
+  limparPeers();
+  definirEstadoConexao("reconectando");
+  tentativas = 0;
+  conectar();
+}
+
+// Pergunta ao servidor se ainda está lá; sem resposta em 3 s, reconecta
+function verificarConexao() {
+  if (encerrado || !ws) return;
+  if (ws.readyState !== 1) { if (ws.readyState === 3) reconectarJa(); return; }
+  const antes = ultimoSinal;
+  try { ws.send(JSON.stringify({ type: "ping" })); } catch { return reconectarJa(); }
+  clearTimeout(timerVerifica);
+  timerVerifica = setTimeout(() => { if (ultimoSinal === antes) reconectarJa(); }, 3000);
+}
+// Dá para mandar? Se a conexão está duvidosa, confere e avisa em vez de perder a mensagem em silêncio.
+function conexaoOk(oQue) {
+  if (ws?.readyState === 1 && Date.now() - ultimoSinal < SEM_SINAL_MS) return true;
+  aviso(`Conexão instável; reconectando. Tente enviar ${oQue} de novo em instantes.`);
+  verificarConexao();
+  return false;
+}
+window.addEventListener("online", verificarConexao);
+window.addEventListener("pageshow", (e) => { if (e.persisted) { verificarConexao(); recuperarMic(); } });
 
 function limparPeers() {
   [...peers.keys()].forEach(removerPeer);
@@ -537,6 +588,13 @@ document.addEventListener("visibilitychange", () => {
   atualizarWakeLock(); // o navegador solta o wake lock quando a aba some
   // o celular derruba o WebSocket em segundo plano: reconecta já, sem esperar o próximo ciclo do backoff
   if (ws && !encerrado && ws.readyState === WebSocket.CLOSED) { tentativas = 0; conectar(); }
+  else { ultimoSinal = Date.now(); verificarConexao(); } // timers pausados em segundo plano não contam como "sem sinal"
+  recuperarMic();
+});
+// Ao sair da página, solta o microfone: no iPhone a página antiga pode continuar segurando e a próxima visita falha
+window.addEventListener("pagehide", (e) => {
+  if (e.persisted) return; // vai para o cache de volta/avançar: ao voltar, "pageshow" recupera
+  try { locais.voz?.getTracks().forEach((t) => t.stop()); } catch {}
 });
 
 /* ---------- chat de voz ----------
@@ -612,12 +670,94 @@ function atualizarMic() {
   b.classList.toggle("ao-vivo", dentro && !micMudo);
   b.classList.toggle("mudo", dentro && micMudo);
   b.setAttribute("aria-pressed", String(dentro && !micMudo));
-  $("mic-txt").textContent = !dentro ? "Entrar na voz" : micMudo ? "Desmutar" : "Mutar";
+  $("mic-txt").textContent = abrindoMic ? "Abrindo…" : !dentro ? "Entrar na voz" : micMudo ? "Desmutar" : "Mutar";
+  b.setAttribute("aria-busy", String(abrindoMic));
   b.title = !dentro ? "Entrar no chat de voz (depois, M muta e desmuta)" : micMudo ? "Desmutar o microfone (M)" : "Mutar o microfone (M)";
   b.setAttribute("aria-label", b.title);
   document.querySelector(".ico-mic").hidden = dentro && micMudo;
   document.querySelector(".ico-mudo").hidden = !(dentro && micMudo);
   pintarVoz("eu");
+}
+
+// Abre o microfone com tempo limite (no iPhone o pedido às vezes trava sem resposta) e algumas tentativas
+// (o microfone pode ainda estar sendo solto pela página anterior). Se as opções de limpeza de ruído falharem, tenta o básico.
+const comTempo = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error("tempo"), { name: "TimeoutError" })), ms))]);
+async function abrirMicrofone() {
+  const pedidos = [
+    { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false },
+    { audio: true, video: false },
+  ];
+  let ultimo;
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    for (const pedido of pedidos) {
+      try { return await comTempo(navigator.mediaDevices.getUserMedia(pedido), 12000); }
+      catch (e) {
+        ultimo = e;
+        // permissão negada, sem microfone ou pedido travado: insistir não adianta (e pedidos travados não se empilham)
+        if (["NotAllowedError", "SecurityError", "NotFoundError", "TimeoutError"].includes(e.name)) throw e;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 700 * (tentativa + 1)));
+  }
+  throw ultimo;
+}
+const erroMic = (e) =>
+  e.name === "NotAllowedError" ? "Permissão do microfone negada. Libere nas configurações do navegador."
+  : e.name === "NotFoundError" ? "Nenhum microfone encontrado."
+  : e.name === "NotReadableError" || e.name === "AbortError"
+    ? "O microfone está em uso por outro app ou aba. Feche a outra aba do Loge (ou o app que usa o microfone) e toque de novo."
+  : e.name === "TimeoutError" ? "O celular não respondeu ao pedido do microfone. Toque de novo."
+  : "Não consegui abrir o microfone. Toque de novo.";
+
+// Vigia a faixa do microfone: o iPhone costuma só silenciá-la (evento "mute") quando outro app ou uma ligação a interrompe,
+// e o botão continuava "ligado" sem ninguém ouvir.
+let timerMudoSistema = null;
+function vigiarMic(stream) {
+  const faixa = stream.getAudioTracks()[0];
+  if (!faixa) return;
+  faixa.addEventListener("ended", () => { // desconectou o fone, revogou a permissão ou o sistema soltou
+    if (locais.voz !== stream) return;
+    recuperarMic(true);
+  });
+  faixa.addEventListener("mute", () => {
+    if (locais.voz !== stream) return;
+    clearTimeout(timerMudoSistema);
+    timerMudoSistema = setTimeout(() => {
+      if (locais.voz === stream && faixa.muted && document.visibilityState === "visible") recuperarMic();
+    }, 2000);
+  });
+  faixa.addEventListener("unmute", () => clearTimeout(timerMudoSistema));
+}
+
+let recuperando = false;
+// Se a faixa do microfone morreu ou ficou muda pelo sistema, abre outra e troca nas conexões sem reentrar na voz
+async function recuperarMic(forcar = false) {
+  if (!locais.voz || recuperando || abrindoMic) return;
+  const faixa = locais.voz.getAudioTracks()[0];
+  const ruim = !faixa || faixa.readyState === "ended" || faixa.muted;
+  if (!ruim && !forcar) return;
+  recuperando = true;
+  try {
+    const novo = await abrirMicrofone();
+    const nova = novo.getAudioTracks()[0];
+    nova.enabled = !micMudo; // mantém mutado quem estava mutado
+    const velho = locais.voz;
+    peers.forEach((p) => p.senders.voz.forEach((s) => { if (s.track?.kind === "audio" || !s.track) s.replaceTrack(nova).catch(() => {}); }));
+    locais.voz = novo;
+    velho.getTracks().forEach((t) => t.stop());
+    vigiarMic(novo);
+    medidores.get("eu")?.(); medidores.delete("eu");
+    ouvirNivel(novo, "eu");
+    enviarMic(); atualizarMic();
+    aviso("Microfone reconectado.");
+  } catch (e) {
+    if (locais.voz && locais.voz.getAudioTracks()[0]?.readyState === "ended") { // não deu: sai da voz com aviso claro
+      removerStream("voz");
+      medidores.get("eu")?.(); medidores.delete("eu");
+      enviarMic(); atualizarMic();
+      aviso("O microfone foi interrompido e não voltou. " + erroMic(e));
+    }
+  } finally { recuperando = false; }
 }
 
 async function entrarNaVoz() {
@@ -628,28 +768,19 @@ async function entrarNaVoz() {
       : "O microfone exige HTTPS ou localhost (veja o README). Use um túnel HTTPS ou abra por http://localhost.");
   }
   abrindoMic = true;
+  atualizarMic();
   let stream;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      video: false,
-    });
+    stream = await abrirMicrofone();
   } catch (e) {
     abrindoMic = false;
-    return aviso(e.name === "NotAllowedError" ? "Permissão do microfone negada. Libere nas configurações do navegador."
-      : e.name === "NotFoundError" ? "Nenhum microfone encontrado."
-      : "Não consegui abrir o microfone.");
+    atualizarMic();
+    return aviso(erroMic(e));
   }
   abrindoMic = false;
   micMudo = false;
   locais.voz = stream;
-  stream.getAudioTracks()[0]?.addEventListener("ended", () => { // desconectou o fone ou revogou a permissão
-    if (locais.voz !== stream) return;
-    removerStream("voz");
-    medidores.get("eu")?.(); medidores.delete("eu");
-    aviso("O microfone foi desconectado.");
-    enviarMic(); atualizarMic();
-  });
+  vigiarMic(stream);
   peers.forEach((p) => adicionarStream(p, "voz"));
   try { ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume?.(); } catch {}
   ouvirNivel(stream, "eu");
@@ -679,7 +810,8 @@ atualizarMic();
 $("form").onsubmit = (e) => {
   e.preventDefault();
   const text = $("texto").value.trim();
-  if (!text || ws?.readyState !== 1) return;
+  if (!text) return;
+  if (!conexaoOk("a mensagem")) return; // o texto continua no campo
   ws.send(JSON.stringify({ type: "chat", text }));
   $("texto").value = "";
 };
@@ -839,7 +971,7 @@ async function buscarGifs(q) {
 }
 
 function enviarReacao(gif) {
-  if (ws?.readyState !== 1) return aviso("Reconectando; tente enviar a reação novamente.");
+  if (!conexaoOk("a reação")) return;
   ws.send(JSON.stringify({ type: "reaction", gif: { url: gif.url, title: gif.title || "Reação", alt: gif.alt || gif.title || "Reação GIF" } }));
   gifPanel.hidden = true;
   modoReacao = false;
@@ -872,7 +1004,7 @@ function mostrarReacao({ gif, name }) {
 }
 
 function enviarGif(gif) {
-  if (ws?.readyState !== 1) return aviso("Reconectando; tente enviar o GIF novamente.");
+  if (!conexaoOk("o GIF")) return;
   ws.send(JSON.stringify({
     type: "chat",
     gif: { url: gif.url, title: gif.title || "GIF", alt: gif.alt || gif.title || "GIF" }
