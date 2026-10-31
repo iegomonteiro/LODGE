@@ -637,7 +637,11 @@ $("filme-400").onclick = () => {
     ctxAudio.resume?.();
     const ok = videos.every(aplicarGanhoFilme);
     if (!ok) {
-      videos.forEach((v) => desligarGanhoFilme(v));
+      filmeAmplificado = false;
+      videos.forEach((v) => {
+        if (v._filmeGanho) atualizarGanhoFilme(v);
+        else { v.muted = false; v.volume = $("rc-vol").value / 100; }
+      });
       return aviso("Este navegador não conseguiu amplificar o áudio. Tente tocar novamente no botão.");
     }
     filmeAmplificado = true;
@@ -1409,7 +1413,10 @@ $("rc-seek").onchange = () => {
   if (estadoRemoto?.dur) enviarCmd({ acao: "seek", t: ($("rc-seek").value / 1000) * estadoRemoto.dur });
 };
 $("rc-vol").oninput = () =>
-  document.querySelectorAll("#palco video[data-stream]").forEach((v) => (v.volume = $("rc-vol").value / 100));
+  document.querySelectorAll("#palco video[data-stream]").forEach((v) => {
+    if (v._filmeGanho) atualizarGanhoFilme(v);
+    else v.volume = $("rc-vol").value / 100;
+  });
 // No iOS o navegador ignora video.volume (o volume é o do aparelho), então o controle seria inútil.
 if (isIOS) $("rc-vol").closest("label").hidden = true;
 
