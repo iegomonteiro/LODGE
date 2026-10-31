@@ -11,7 +11,8 @@ const peers = new Map(); // id -> { id, pc, polite, makingOffer, ignoreOffer, se
 const nomes = new Map(); // id -> nome
 const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmissão de tela/arquivo)
 const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
-let micMudo = false, abrindoMic = false;\nlet filmeAmplificado = false;
+let micMudo = false, abrindoMic = false;
+let filmeAmplificado = false;
 const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
 const perfil = lerPerfil(); // nome + foto + código do dono (só neste navegador); null = visitante sem perfil
 const fotos = new Map();    // id -> foto (data URL) dos outros
@@ -567,6 +568,8 @@ function mostrarRemoto(peerId, stream) {
     $("palco").append(el);
     atualizarEstadoTransmissao();
     tocarComSom(el);
+    if (el._filmeGanho) atualizarGanhoFilme(el);
+    else if (filmeAmplificado) aplicarGanhoFilme(el);
     stream.onremovetrack = () => {
       if (!stream.getTracks().length) { devolverPlayer(el); atualizarWakeLock(); renderRemoto(); }
     };
@@ -604,12 +607,16 @@ function aplicarGanhoFilme(el) {
     return false;
   }
 }
+function atualizarGanhoFilme(el) {
+  if (!el._filmeGanho) return;
+  el._filmeGanho.ganho.gain.value = (filmeAmplificado ? 4 : 1) * ($("rc-vol").value / 100);
+  el.muted = true;
+}
 function desligarGanhoFilme(el) {
-  const g = el._filmeGanho;
-  if (!g) return;
-  try { g.fonte.disconnect(); g.ganho.disconnect(); } catch {}
-  el._filmeGanho = null;
-  el.muted = false;
+  // O MediaElementAudioSourceNode é reutilizado junto com o player.
+  if (!el._filmeGanho) return;
+  el._filmeGanho.ganho.gain.value = 0;
+  el.muted = true;
 }
 function atualizarBotaoAmplificador() {
   const b = $("filme-400");
@@ -637,7 +644,8 @@ $("filme-400").onclick = () => {
   }
   atualizarBotaoAmplificador();
 };
-\n/* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
+
+/* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
 let wakeLock = null, pedindoWakeLock = false;
 async function atualizarWakeLock() {
   if (!("wakeLock" in navigator) || pedindoWakeLock) return;
