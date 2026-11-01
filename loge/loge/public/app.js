@@ -12,6 +12,7 @@ const nomes = new Map(); // id -> nome
 const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmissão de tela/arquivo)
 const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
 let micMudo = false, abrindoMic = false;
+let filmeAmplificado = false;
 const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
 const perfil = lerPerfil(); // nome + foto + código do dono (só neste navegador); null = visitante sem perfil
 const fotos = new Map();    // id -> foto (data URL) dos outros
@@ -567,6 +568,8 @@ function mostrarRemoto(peerId, stream) {
     $("palco").append(el);
     atualizarEstadoTransmissao();
     tocarComSom(el);
+    if (el._filmeGanho) atualizarGanhoFilme(el);
+    else if (filmeAmplificado) aplicarGanhoFilme(el);
     stream.onremovetrack = () => {
       if (!stream.getTracks().length) { devolverPlayer(el); atualizarWakeLock(); renderRemoto(); }
     };
@@ -575,6 +578,76 @@ function mostrarRemoto(peerId, stream) {
   renderRemoto();
   atualizarWakeLock();
 }
+
+/* ---------- amplificação do áudio do filme (até 400%) ---------- */
+function aplicarGanhoFilme(el) {
+  try {
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    ctxAudio.resume?.();
+    if (!compressor) {
+      compressor = ctxAudio.createDynamicsCompressor();
+      compressor.threshold.value = -12;
+      compressor.ratio.value = 6;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.2;
+      compressor.connect(ctxAudio.destination);
+    }
+    if (!el._filmeGanho) {
+      const fonte = ctxAudio.createMediaElementSource(el);
+      const ganho = ctxAudio.createGain();
+      fonte.connect(ganho);
+      ganho.connect(compressor);
+      el._filmeGanho = { fonte, ganho };
+    }
+    el._filmeGanho.ganho.gain.value = 4 * ($("rc-vol").value / 100);
+    el.muted = true;
+    return true;
+  } catch (e) {
+    console.warn("Não foi possível amplificar o áudio do filme:", e);
+    return false;
+  }
+}
+function atualizarGanhoFilme(el) {
+  if (!el._filmeGanho) return;
+  el._filmeGanho.ganho.gain.value = (filmeAmplificado ? 4 : 1) * ($("rc-vol").value / 100);
+  el.muted = true;
+}
+function desligarGanhoFilme(el) {
+  // O MediaElementAudioSourceNode é reutilizado junto com o player.
+  if (!el._filmeGanho) return;
+  el._filmeGanho.ganho.gain.value = 0;
+  el.muted = true;
+}
+function atualizarBotaoAmplificador() {
+  const b = $("filme-400");
+  if (!b) return;
+  b.classList.toggle("ativo", filmeAmplificado);
+  b.setAttribute("aria-pressed", String(filmeAmplificado));
+  b.textContent = filmeAmplificado ? "400% ligado" : "400%";
+  b.title = filmeAmplificado ? "Desativar amplificação e voltar ao volume normal" : "Amplificar o áudio do filme até 4 vezes";
+}
+$("filme-400").onclick = () => {
+  const videos = [...document.querySelectorAll("#palco video[data-stream]")];
+  if (!videos.length) return aviso("Não há filme sendo reproduzido neste momento.");
+  if (filmeAmplificado) {
+    filmeAmplificado = false;
+    videos.forEach((v) => atualizarGanhoFilme(v));
+  } else {
+    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
+    ctxAudio.resume?.();
+    const ok = videos.every(aplicarGanhoFilme);
+    if (!ok) {
+      filmeAmplificado = false;
+      videos.forEach((v) => {
+        if (v._filmeGanho) atualizarGanhoFilme(v);
+        else { v.muted = false; v.volume = $("rc-vol").value / 100; }
+      });
+      return aviso("Este navegador não conseguiu amplificar o áudio. Tente tocar novamente no botão.");
+    }
+    filmeAmplificado = true;
+  }
+  atualizarBotaoAmplificador();
+};
 
 /* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
 let wakeLock = null, pedindoWakeLock = false;
@@ -1347,7 +1420,10 @@ $("rc-seek").onchange = () => {
   if (estadoRemoto?.dur) enviarCmd({ acao: "seek", t: ($("rc-seek").value / 1000) * estadoRemoto.dur });
 };
 $("rc-vol").oninput = () =>
-  document.querySelectorAll("#palco video[data-stream]").forEach((v) => (v.volume = $("rc-vol").value / 100));
+  document.querySelectorAll("#palco video[data-stream]").forEach((v) => {
+    if (v._filmeGanho) atualizarGanhoFilme(v);
+    else v.volume = $("rc-vol").value / 100;
+  });
 // No iOS o navegador ignora video.volume (o volume é o do aparelho), então o controle seria inútil.
 if (isIOS) $("rc-vol").closest("label").hidden = true;
 
