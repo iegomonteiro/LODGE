@@ -343,8 +343,8 @@ body.trava { overflow: hidden; }
   }
 }
 
-/* No iPhone deitado, o palco ocupa a viewport inteira. O vídeo usa cover
-   para eliminar as faixas laterais; isso pode cortar um pouco da imagem. */
+/* No iPhone deitado, o palco ocupa a viewport inteira. O vídeo usa contain:
+   aparece inteiro, sem cortar nada. */
 @media (max-width: 940px) and (orientation: landscape) and (pointer: coarse) {
   #quadro:fullscreen, #quadro:-webkit-full-screen, #quadro.pseudo-cheia {
     position:fixed !important;
@@ -374,7 +374,7 @@ body.trava { overflow: hidden; }
   #quadro.pseudo-cheia #palco video {
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:contain; /* a imagem inteira, sem cortar; sobram só faixas pretas onde a tela é mais larga que o filme */
   }
 }
 
@@ -517,8 +517,10 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
   #rc-seek { flex: 1; width: auto; min-width: 0; }
   #rc-tempo { white-space: nowrap; font-size: .72rem; }
-  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
-  .cinema-card { flex: 1; min-width: 0; padding: .3rem .6rem; gap: .5rem; }
+  #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 6px; }
+  .cinema-card { flex: 1; min-width: 0; padding: .3rem .5rem; gap: .4rem; }
+  .cinema-card .textos { display: none; } /* deitado a coluna é estreita: só o ícone e a chave */
+  #controles > .grupo:last-child .btn { padding: .45rem .55rem; }
   .cinema-card small { display: none; }
   .cinema-card .textos { min-width: 0; }
   .cinema-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
