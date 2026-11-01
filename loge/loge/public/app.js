@@ -1178,6 +1178,40 @@ function aviso(texto) {
   $("msgs").scrollTop = $("msgs").scrollHeight;
 }
 
+/* ---------- mini-tela (picture in picture) ----------
+   O filme vira uma janelinha flutuante que continua tocando ao sair do navegador. Computador: API padrão.
+   iPhone/Safari: webkitSetPresentationMode. Onde o navegador permite, entra sozinho ao sair da página. */
+const filmeEl = () => document.querySelector("#palco video[data-stream]");
+const pipAtivo = (v) => document.pictureInPictureElement === v || v?.webkitPresentationMode === "picture-in-picture";
+const pipSuporta = (v) =>
+  !!v && ((document.pictureInPictureEnabled && !v.disablePictureInPicture) || v.webkitSupportsPresentationMode?.("picture-in-picture"));
+function atualizarMiniTela() {
+  const v = filmeEl(), b = $("mini-tela");
+  b.hidden = !pipSuporta(v);
+  b.setAttribute("aria-pressed", String(pipAtivo(v)));
+}
+async function alternarMiniTela(auto) {
+  const v = filmeEl();
+  if (!pipSuporta(v)) return;
+  try {
+    if (pipAtivo(v)) {
+      if (auto) return;
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else v.webkitSetPresentationMode("inline");
+    } else if (v.requestPictureInPicture) await v.requestPictureInPicture();
+    else v.webkitSetPresentationMode("picture-in-picture");
+    v.play().catch(() => {});
+  } catch (e) { if (!auto) aviso("Seu navegador não deixou abrir a mini-tela agora."); }
+  atualizarMiniTela();
+}
+$("mini-tela").onclick = () => alternarMiniTela(false);
+try {
+  navigator.mediaSession?.setActionHandler("enterpictureinpicture", () => alternarMiniTela(true)); // Chrome/Brave: entra sozinho ao trocar de aba/app
+} catch {}
+document.addEventListener("enterpictureinpicture", atualizarMiniTela, true);
+document.addEventListener("leavepictureinpicture", atualizarMiniTela, true);
+document.addEventListener("webkitpresentationmodechanged", atualizarMiniTela, true);
+
 /* ---------- modo cinema, tela cheia, link e estatísticas ---------- */
 $("cinema").onchange = () => document.body.classList.toggle("cinema", $("cinema").checked);
 document.addEventListener("keydown", (e) => {
@@ -1362,6 +1396,7 @@ const fmt = (s) => {
 };
 
 function renderRemoto() {
+  atualizarMiniTela();
   $("remoto").hidden = !document.querySelector("#palco video[data-stream]");
   const vivo = estadoRemoto && Date.now() - estadoRemoto.t < 3500;
   for (const id of ["rc-seek", "rc-tempo"]) $(id).hidden = !vivo;
