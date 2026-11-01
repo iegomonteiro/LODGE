@@ -331,7 +331,11 @@ body.trava { overflow: hidden; }
   position: absolute; z-index: 101;
   top: max(.75rem, env(safe-area-inset-top)); right: max(.75rem, env(safe-area-inset-right));
   background: rgba(14, 15, 19, .72); backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
 }
+#quadro.sair-visivel #sair-cheia { opacity: 1; pointer-events: auto; }
+#filme-vol { position: relative; }
+#filme-vol[data-vol]:not([data-vol=""])::after { content: attr(data-vol) "%"; margin-left: .35rem; font-size: .75rem; color: var(--amber); }
 
 @media (max-width: 900px) and (pointer: coarse) {
   #quadro:fullscreen, #quadro:-webkit-full-screen, #quadro.pseudo-cheia {
@@ -419,12 +423,13 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
   #controles { gap: 8px; flex-wrap: wrap; justify-content: stretch; }
   #qualidade { order: 3; }
   #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; } /* o volume do celular é o dos botões do aparelho */
   #rc-seek { flex: 1; width: auto; min-width: 0; }
   #rc-tempo { white-space: nowrap; font-size: .75rem; }
   #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
-  .cinema-card { flex: 1; padding: .3rem .7rem; gap: .6rem; }
+  .cinema-card { flex: 1; min-width: 0; padding: .3rem .7rem; gap: .6rem; }
   .cinema-card small { display: none; }
+  .cinema-card .textos { min-width: 0; }
+  .cinema-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cinema-card strong { font-size: .85rem; }
   details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: calc(100vw - 24px); }
 
@@ -510,12 +515,13 @@ body.so-assiste #palco:empty::before { content: "Aguardando alguém começar a t
 
   #qualidade { order: 3; }
   #remoto { order: 1; width: 100%; flex-wrap: nowrap; gap: 8px; }
-  #remoto .vol { display: none; }
   #rc-seek { flex: 1; width: auto; min-width: 0; }
   #rc-tempo { white-space: nowrap; font-size: .72rem; }
   #controles > .grupo:last-child { order: 2; flex: 1; flex-wrap: nowrap; gap: 8px; }
-  .cinema-card { flex: 1; padding: .3rem .6rem; gap: .5rem; }
+  .cinema-card { flex: 1; min-width: 0; padding: .3rem .6rem; gap: .5rem; }
   .cinema-card small { display: none; }
+  .cinema-card .textos { min-width: 0; }
+  .cinema-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cinema-card strong { font-size: .8rem; }
   details .painel { left: 0; right: auto; bottom: auto; top: calc(100% + .5rem); max-width: 240px; }
 }
@@ -1021,9 +1027,6 @@ input[type="range"] { padding: 0; border: 0; background: transparent; accent-col
 .vol-linha input[type="range"] { flex: 1; min-width: 0; }
 .vol-linha output { min-width: 3.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--amber); font-size: .85rem; }
 
-/* Amplificador do áudio do filme */
-.volume-400 { white-space: nowrap; min-width: 4.4rem; font-weight: 700; letter-spacing: .02em; }
-.volume-400.ativo { border-color: var(--amber); color: var(--amber); background: rgba(255, 179, 71, .13); box-shadow: 0 0 0 1px rgba(255, 179, 71, .12) inset; }
-@media (max-height: 520px) and (orientation: landscape) and (max-width: 940px) {
-  #remoto .volume-400 { display: inline-flex; }
-}
+/* o chat nunca pode alargar a página no celular */
+#lateral, #chat, #msgs, #form { min-width: 0; max-width: 100%; }
+#msgs { overflow-x: hidden; }

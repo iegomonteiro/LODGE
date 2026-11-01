@@ -12,7 +12,6 @@ const nomes = new Map(); // id -> nome
 const tipos = new Map(); // streamId remoto -> "voz" (as demais são a transmissão de tela/arquivo)
 const locais = { tela: null, voz: null }; // o que eu envio: tela/arquivo e o microfone
 let micMudo = false, abrindoMic = false;
-let filmeAmplificado = false;
 const vozEstado = new Map(); // id -> "on" | "mudo" (quem está no chat de voz)
 const perfil = lerPerfil(); // nome + foto + código do dono (só neste navegador); null = visitante sem perfil
 const fotos = new Map();    // id -> foto (data URL) dos outros
@@ -561,93 +560,21 @@ function mostrarRemoto(peerId, stream) {
     el = pegarPlayer("video");
     el.dataset.stream = stream.id;
     el.dataset.peer = peerId;
-    el.volume = $("rc-vol").value / 100;
     el.srcObject = stream;
     // sem pausa para ninguém: se algo pausar (toque, player nativo do iPhone, trocar de app), volta a tocar
     el.onpause = () => { if (!el.ended && el.srcObject) el.play().catch(() => {}); };
     $("palco").append(el);
     atualizarEstadoTransmissao();
     tocarComSom(el);
-    if (el._filmeGanho) atualizarGanhoFilme(el);
-    else if (filmeAmplificado) aplicarGanhoFilme(el);
     stream.onremovetrack = () => {
       if (!stream.getTracks().length) { devolverPlayer(el); atualizarWakeLock(); renderRemoto(); }
     };
   }
   if (el.srcObject !== stream) el.srcObject = stream;
+  aplicarVolumeFilme(); // a trilha de áudio pode chegar depois da de vídeo
   renderRemoto();
   atualizarWakeLock();
 }
-
-/* ---------- amplificação do áudio do filme (até 400%) ---------- */
-function aplicarGanhoFilme(el) {
-  try {
-    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
-    ctxAudio.resume?.();
-    if (!compressor) {
-      compressor = ctxAudio.createDynamicsCompressor();
-      compressor.threshold.value = -12;
-      compressor.ratio.value = 6;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.2;
-      compressor.connect(ctxAudio.destination);
-    }
-    if (!el._filmeGanho) {
-      const fonte = ctxAudio.createMediaElementSource(el);
-      const ganho = ctxAudio.createGain();
-      fonte.connect(ganho);
-      ganho.connect(compressor);
-      el._filmeGanho = { fonte, ganho };
-    }
-    el._filmeGanho.ganho.gain.value = 4 * ($("rc-vol").value / 100);
-    el.muted = true;
-    return true;
-  } catch (e) {
-    console.warn("Não foi possível amplificar o áudio do filme:", e);
-    return false;
-  }
-}
-function atualizarGanhoFilme(el) {
-  if (!el._filmeGanho) return;
-  el._filmeGanho.ganho.gain.value = (filmeAmplificado ? 4 : 1) * ($("rc-vol").value / 100);
-  el.muted = true;
-}
-function desligarGanhoFilme(el) {
-  // O MediaElementAudioSourceNode é reutilizado junto com o player.
-  if (!el._filmeGanho) return;
-  el._filmeGanho.ganho.gain.value = 0;
-  el.muted = true;
-}
-function atualizarBotaoAmplificador() {
-  const b = $("filme-400");
-  if (!b) return;
-  b.classList.toggle("ativo", filmeAmplificado);
-  b.setAttribute("aria-pressed", String(filmeAmplificado));
-  b.textContent = filmeAmplificado ? "400% ligado" : "400%";
-  b.title = filmeAmplificado ? "Desativar amplificação e voltar ao volume normal" : "Amplificar o áudio do filme até 4 vezes";
-}
-$("filme-400").onclick = () => {
-  const videos = [...document.querySelectorAll("#palco video[data-stream]")];
-  if (!videos.length) return aviso("Não há filme sendo reproduzido neste momento.");
-  if (filmeAmplificado) {
-    filmeAmplificado = false;
-    videos.forEach((v) => atualizarGanhoFilme(v));
-  } else {
-    ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
-    ctxAudio.resume?.();
-    const ok = videos.every(aplicarGanhoFilme);
-    if (!ok) {
-      filmeAmplificado = false;
-      videos.forEach((v) => {
-        if (v._filmeGanho) atualizarGanhoFilme(v);
-        else { v.muted = false; v.volume = $("rc-vol").value / 100; }
-      });
-      return aviso("Este navegador não conseguiu amplificar o áudio. Tente tocar novamente no botão.");
-    }
-    filmeAmplificado = true;
-  }
-  atualizarBotaoAmplificador();
-};
 
 /* ---------- celular: manter a tela ligada e reconectar ao voltar do segundo plano ---------- */
 let wakeLock = null, pedindoWakeLock = false;
@@ -693,7 +620,7 @@ function tocar(el) { el.play().catch(() => pendentes.add(el)); }
 document.addEventListener("pointerdown", () => {
   try { ctxAudio?.resume?.(); } catch {}
   for (const el of [...pendentes]) { pendentes.delete(el); tocar(el); }
-  for (const el of [...semSom]) { semSom.delete(el); el.muted = false; el.play().catch(() => {}); }
+  for (const el of [...semSom]) { semSom.delete(el); el.muted = !!el._ganho; el.play().catch(() => {}); }
 }, true);
 
 function tocarVoz(peerId, stream) {
@@ -722,16 +649,21 @@ const volGuardado = (nome) => {
     return bruto !== null && Number.isFinite(v) && v >= 0 && v <= 3 ? v : 1;
   } catch { return 1; }
 };
+const FILME = "filme"; // chave do volume da transmissão (os colegas usam o id)
 const volDe = (id) => {
-  if (!volumes.has(id)) volumes.set(id, volGuardado(nomes.get(id) || ""));
+  if (!volumes.has(id)) volumes.set(id, volGuardado(id === FILME ? FILME : nomes.get(id) || ""));
   return volumes.get(id);
 };
 
+// "playback" toca mesmo com a chave de silêncio, mas IMPEDE o iPhone de abrir o microfone. "play-and-record" faz as duas coisas.
+function modoAudioConversa() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== "play-and-record") navigator.audioSession.type = "play-and-record"; } catch {}
+}
 function ligarGanho(el, v) {
   try {
     if (el._ganho) { el._ganho.gain.gain.value = v; return true; }
     const stream = el.srcObject;
-    if (!stream) return false;
+    if (!stream || !stream.getAudioTracks().length) return false;
     ctxAudio ||= new (window.AudioContext || window.webkitAudioContext)();
     ctxAudio.resume?.();
     if (!compressor) {
@@ -745,7 +677,7 @@ function ligarGanho(el, v) {
     fonte.connect(gain); gain.connect(compressor);
     el.muted = true; // o som sai pelo WebAudio; o elemento só mantém o fluxo ligado
     el._ganho = { fonte, gain };
-    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {} // iPhone: não calar com a chave de silêncio
+    modoAudioConversa(); // iPhone: não calar com a chave de silêncio, sem bloquear o microfone
     return true;
   } catch { return false; }
 }
@@ -754,7 +686,7 @@ function desligarGanho(el) {
   if (!g) return;
   try { g.fonte.disconnect(); g.gain.disconnect(); } catch {}
   el._ganho = null;
-  el.muted = false;
+  el.muted = semSom.has(el);
 }
 
 function aplicarVolume(peerId) {
@@ -767,12 +699,23 @@ function aplicarVolume(peerId) {
   if (legenda) legenda.dataset.vol = v === 1 ? "" : String(Math.round(v * 100)); // o CSS mostra "· 200%" ao lado do nome
 }
 
+function aplicarVolumeFilme() {
+  const v = volDe(FILME);
+  document.querySelectorAll("#palco video[data-stream]").forEach((el) => {
+    if (v === 1) { desligarGanho(el); el.volume = 1; return; }
+    if (!ligarGanho(el, v)) el.volume = Math.min(1, v);
+  });
+  const b = $("filme-vol");
+  b.dataset.vol = v === 1 ? "" : String(Math.round(v * 100));
+  b.setAttribute("aria-label", "Volume do filme: " + Math.round(v * 100) + "%");
+}
+
 const pop = () => $("vol-pop");
 function abrirVolume(id) {
-  const av = document.querySelector(`[data-avatar="${id}"]`);
+  const av = id === FILME ? $("filme-vol") : document.querySelector(`[data-avatar="${id}"]`);
   if (!av) return;
   volAberto = id;
-  $("vol-nome").textContent = nomes.get(id) || "Colega";
+  $("vol-nome").textContent = id === FILME ? "Volume do filme" : nomes.get(id) || "Colega";
   $("vol-range").value = Math.round(volDe(id) * 100);
   $("vol-valor").textContent = $("vol-range").value + "%";
   const p = pop();
@@ -789,13 +732,14 @@ function mudarVolume(pct, salvar) {
   const v = pct / 100;
   volumes.set(volAberto, v);
   $("vol-valor").textContent = pct + "%";
-  aplicarVolume(volAberto);
-  if (salvar) { try { localStorage.setItem(chaveVol(nomes.get(volAberto) || ""), String(v)); } catch {} }
+  if (volAberto === FILME) aplicarVolumeFilme(); else aplicarVolume(volAberto);
+  if (salvar) { try { localStorage.setItem(chaveVol(volAberto === FILME ? FILME : nomes.get(volAberto) || ""), String(v)); } catch {} }
 }
 $("vol-range").addEventListener("input", () => mudarVolume(Number($("vol-range").value), false));
 $("vol-range").addEventListener("change", () => mudarVolume(Number($("vol-range").value), true));
 $("vol-normal").addEventListener("click", () => { $("vol-range").value = 100; mudarVolume(100, true); });
-document.addEventListener("pointerdown", (e) => { if (volAberto && !pop().contains(e.target) && !e.target.closest(".avatar.ajustavel")) fecharVolume(); });
+document.addEventListener("pointerdown", (e) => { if (volAberto && !pop().contains(e.target) && !e.target.closest(".avatar.ajustavel, #filme-vol")) fecharVolume(); });
+$("filme-vol").onclick = () => (volAberto === FILME ? fecharVolume() : abrirVolume(FILME));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && volAberto) fecharVolume(); });
 
 // Anel dourado no avatar de quem está falando (mede o volume da faixa; não muda o áudio)
@@ -862,6 +806,7 @@ async function abrirMicrofone() {
     { audio: true, video: false },
   ];
   let ultimo;
+  modoAudioConversa(); // a sessão de áudio precisa permitir gravação antes do pedido
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     for (const pedido of pedidos) {
       try { return await comTempo(navigator.mediaDevices.getUserMedia(pedido), 12000); }
@@ -881,7 +826,8 @@ const erroMic = (e) =>
   : e.name === "NotReadableError" || e.name === "AbortError"
     ? "O microfone está em uso por outro app ou aba. Feche a outra aba do Loge (ou o app que usa o microfone) e toque de novo."
   : e.name === "TimeoutError" ? "O celular não respondeu ao pedido do microfone. Toque de novo."
-  : "Não consegui abrir o microfone. Toque de novo.";
+  : e.name === "SecurityError" ? "O navegador bloqueou o microfone neste site. Abra o endereço com https:// e confira as permissões do site."
+  : `Não consegui abrir o microfone (${e.name || "erro"}${e.message ? ": " + String(e.message).slice(0, 80) : ""}). Toque de novo.`;
 
 // Vigia a faixa do microfone: o iPhone costuma só silenciá-la (evento "mute") quando outro app ou uma ligação a interrompe,
 // e o botão continuava "ligado" sem ninguém ouvir.
@@ -949,6 +895,7 @@ async function entrarNaVoz() {
   } catch (e) {
     abrindoMic = false;
     atualizarMic();
+    console.error("Microfone:", e);
     return aviso(erroMic(e));
   }
   abrindoMic = false;
@@ -1267,11 +1214,28 @@ function restaurarControlesOriginais() {
 function programarOcultarControlesReacao() {}
 
 
+// O X de sair só aparece quando se toca na tela e some sozinho depois de alguns segundos
+let timerSair = null;
+function esconderSair() {
+  clearTimeout(timerSair);
+  quadro.classList.remove("sair-visivel");
+}
+function mostrarSair() {
+  quadro.classList.add("sair-visivel");
+  clearTimeout(timerSair);
+  timerSair = setTimeout(esconderSair, 3000);
+}
+quadro.addEventListener("click", (e) => {
+  if ($("sair-cheia").hidden || e.target.closest("button, input, a, #vol-pop")) return;
+  if (quadro.classList.contains("sair-visivel")) esconderSair(); else mostrarSair();
+});
+
 function sairCheia() {
   if (cheiaNativa()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
   quadro.classList.remove("pseudo-cheia");
   document.body.classList.remove("trava");
   $("sair-cheia").hidden = true;
+  esconderSair();
   restaurarControlesOriginais();
   try { screen.orientation?.unlock?.(); } catch {}
 }
@@ -1412,12 +1376,4 @@ $("rc-seek").onchange = () => {
   arrastando = false;
   if (estadoRemoto?.dur) enviarCmd({ acao: "seek", t: ($("rc-seek").value / 1000) * estadoRemoto.dur });
 };
-$("rc-vol").oninput = () =>
-  document.querySelectorAll("#palco video[data-stream]").forEach((v) => {
-    if (v._filmeGanho) atualizarGanhoFilme(v);
-    else v.volume = $("rc-vol").value / 100;
-  });
-// No iOS o navegador ignora video.volume (o volume é o do aparelho), então o controle seria inútil.
-if (isIOS) $("rc-vol").closest("label").hidden = true;
-
 atualizarBotoes(); // esconde o que este navegador não consegue fazer
