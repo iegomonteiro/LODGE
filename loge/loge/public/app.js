@@ -1193,15 +1193,30 @@ function atualizarMiniTela() {
 async function alternarMiniTela(auto) {
   const v = filmeEl();
   if (!pipSuporta(v)) return;
-  try {
-    if (pipAtivo(v)) {
-      if (auto) return;
+  if (pipAtivo(v)) {
+    if (auto) return;
+    try {
       if (document.pictureInPictureElement) await document.exitPictureInPicture();
       else v.webkitSetPresentationMode("inline");
-    } else if (v.requestPictureInPicture) await v.requestPictureInPicture();
-    else v.webkitSetPresentationMode("picture-in-picture");
-    v.play().catch(() => {});
-  } catch (e) { if (!auto) aviso("Seu navegador não deixou abrir a mini-tela agora."); }
+    } catch {}
+    return atualizarMiniTela();
+  }
+  // iPhone: o modo nativo da Apple primeiro (é o que o Safari/Brave de lá realmente aceitam); no computador, a API padrão.
+  const tentativas = [];
+  if (v.webkitSupportsPresentationMode?.("picture-in-picture")) {
+    tentativas.push(async () => {
+      v.webkitSetPresentationMode("picture-in-picture");
+      await new Promise((r) => setTimeout(r, 400));
+      if (v.webkitPresentationMode !== "picture-in-picture") throw new Error("recusado");
+    });
+  }
+  if (v.requestPictureInPicture) tentativas.push(() => v.requestPictureInPicture());
+  let erro = null;
+  for (const tentar of tentativas) {
+    try { await tentar(); erro = null; break; } catch (e) { erro = e; }
+  }
+  if (erro && !auto) aviso(`Não consegui abrir a mini-tela neste navegador (${erro.name || "erro"}: ${erro.message || "recusado"}).`);
+  else v.play().catch(() => {});
   atualizarMiniTela();
 }
 $("mini-tela").onclick = () => alternarMiniTela(false);
