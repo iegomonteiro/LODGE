@@ -481,10 +481,25 @@ $("arquivo").onchange = async (e) => {
     pararTransmissao(); // sharerId === myId (share-ok), então isso também libera o palco no servidor
     return;
   }
-  transmitir(capturar.call(v));
+  const captura = capturar.call(v);
+  transmitir(captura);
   modoArquivo = true;
   enviarEstado();
+  verificarAudioDoArquivo(v, captura);
 };
+
+// Arquivos .mkv "dual audio" quase sempre trazem o som em AC3/E-AC3/DTS/TrueHD, que Chrome e Brave não sabem tocar:
+// o filme abre, mas fica mudo. Avisa quem transmite em vez de deixar todo mundo sem som sem saber o porquê.
+function verificarAudioDoArquivo(v, captura) {
+  setTimeout(() => {
+    if (document.getElementById("v-local") !== v || v.paused && !v.ended) return;
+    const semFaixa = captura.getAudioTracks().length === 0;
+    const semDecodificar = typeof v.webkitAudioDecodedByteCount === "number" && v.currentTime > 1 && v.webkitAudioDecodedByteCount === 0;
+    if (semFaixa || semDecodificar) {
+      aviso("Este arquivo está sem som: o navegador não toca o formato de áudio dele (comum em .mkv dual audio: AC3, DTS, E-AC3). Converta o áudio para AAC e transmita de novo. Passo a passo: ffmpeg -i filme.mkv -map 0:v:0 -map 0:a:0 -c:v copy -c:a aac -b:a 192k filme.mp4");
+    }
+  }, 3000);
+}
 
 function atualizarBotoes() {
   const transmitindo = !!locais.tela;
